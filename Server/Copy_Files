@@ -1,0 +1,46 @@
+#!/bin/bash
+
+Filename=${PWD##*/}
+Name="pi"
+ip="128.235.117.39"
+#ip="192.168.1.19"
+Server=$Name"@"$ip
+Destination="/home/pi/CPP/"$Filename
+
+
+ServerFolders=$(ssh $Server 'cd CPP; find . -maxdepth 1 -name "BEAM*" -print0 | sort -z')
+echo $ServerFolders
+
+serlen=${#ServerFolders}
+sernum=${ServerFolders:strlen-3:3}
+echo $sernum
+
+filelen=${#Filename}
+filenum=${Filename:filelen-3:3}
+echo $filenum
+
+echo $((filenum > sernum))
+echo $((sernum > filenum))
+
+if [[ $filenum > $sernum ]]
+then
+	echo "This version is newer than the one on the Server"
+	
+	# Create the folder	
+	ssh $Server "cd; cd CPP; mkdir $Filename"
+
+elif [[ $filenum < $sernum ]]
+then
+	echo "This version is older than the one on the Server. Please ensure you are installing the right version"
+	exit 1
+else
+	echo "Versions are equal. This will update the code on the Server"
+fi
+
+echo
+echo
+echo
+
+scp $Filename.pro {globals,main,mainwindow,settime}.cpp {globals,mainwindow,settime}.h {mainwindow,settime}.ui $Server:$Destination
+
+ssh $Server "pwd && cd $Destination; ls; sed -i -e 's+beam/Dropbox/School/PhD/PhD Work/Codes/QT+pi/CPP+g' $Filename.pro;  sed -i -e 's|\(home\).*\(Codes\)|home/pi/CPP|g' mainwindow.cpp; nano mainwindow.cpp; qmake $Filename.pro; make && ls -la"
