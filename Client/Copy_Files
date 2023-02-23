@@ -1,0 +1,14 @@
+#!/bin/bash
+
+Filename="BEAM_Client_v013"
+Name="pi"
+ip="128.235.117.132"
+#ip="192.168.1.20"
+Server=$Name"@"$ip
+Destination="/home/pi/CPP_Tests/BEAM_Client_v013"
+
+echo $Server
+
+scp $Filename.pro {globals,main,mainwindow,receivetime}.cpp {globals,mainwindow,receivetime}.h {mainwindow,receivetime}.ui $Server:$Destination
+
+ssh $Server "pwd && cd $Destination; ls; sed -i -e 's+beam/Dropbox/School/PhD/PhD Work/Codes/QT+pi/CPP+g' $Filename.pro;  sed -i -e 's|\(home\).*\(Codes\)|home/pi/CPP|g' mainwindow.cpp; nano mainwindow.cpp; qmake $Filename.pro; make && ls -la"
