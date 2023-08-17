@@ -85,6 +85,7 @@ Scalar col = Scalar(0, 255, 0); //Color for drawing on frame
 
 //Data Saving
 int save_placeholder[4] = {0};
+int calibration_number = 1;
 string headers[3][1] = {{"Right Calibration"}, {"Left Calibration"}, {"Test Data"}};
 int header_num = 0;
 ofstream Output_file;
@@ -272,6 +273,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //Hide the buttons to show video to align the cameras
     ui->gridLayoutWidget->setVisible(false);
+    ui->verticalLayoutWidget->setVisible(false);
 
     //Disable sliders because we're just setting the cameras up
     ui->R_ThresholdSlider->setEnabled(false);
@@ -328,7 +330,7 @@ void MainWindow::startCamera(){
         connect(timer, SIGNAL(timeout()), this, SLOT(checkElapsedTime()));
         qDebug() << "Slot Connected";
     }
-    timer->start(100);
+    timer->start(33);
     qDebug() << "Timer Started";
 }
 
@@ -476,6 +478,9 @@ void MainWindow::returntoHomeScreen(){
     //Hide video and controls
     ui->horizontalLayoutWidget->setVisible(false);
 
+    //Hide Cal Buttons
+    ui->verticalLayoutWidget->setVisible(false);
+
     //Show home screen
     ui->gridLayoutWidget->setVisible(true);
 }
@@ -534,7 +539,7 @@ void MainWindow::on_RightCal_clicked()
 {
     //Show/Hide ui elements
     ui->gridLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
+    ui->verticalLayoutWidget->setVisible(true);
 
     //Disable Sliders
     ui->R_ThresholdSlider->setEnabled(false);
@@ -546,7 +551,7 @@ void MainWindow::on_RightCal_clicked()
     DisplaySelector = 0;
     RecordingTimer = CalibrationTime;
 
-    startCamera();
+
 
     ui->LeftCal->setEnabled(true);
     headerwritten = 0;
@@ -572,6 +577,13 @@ void MainWindow::on_LeftCal_clicked()
 
     ui->RunTest->setEnabled(true);
     headerwritten = 0;
+}
+
+void MainWindow::on_Degree_1_Button_clicked()
+{
+    calibration_number = 1;
+
+    startCamera();
 }
 
 void MainWindow::on_RunTest_clicked()
@@ -635,6 +647,9 @@ void MainWindow::on_L_ThresholdSlider_valueChanged(int LThresh)
     ui->L_ThresholdDisplay->display(LThresh);
     FrameProc[1].thresh_val = LThresh;
 }
+
+
+
 
 
 
