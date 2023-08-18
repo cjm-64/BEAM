@@ -491,18 +491,18 @@
       <x>-1</x>
       <y>0</y>
       <width>801</width>
-      <height>431</height>
+      <height>401</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="Calibration_Buttons">
      <property name="spacing">
-      <number>100</number>
+      <number>50</number>
      </property>
      <property name="leftMargin">
       <number>250</number>
      </property>
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="Degree_Selection_Label">
        <property name="maximumSize">
         <size>
          <width>300</width>
@@ -519,7 +519,7 @@
        <property name="maximumSize">
         <size>
          <width>300</width>
-         <height>75</height>
+         <height>50</height>
         </size>
        </property>
        <property name="text">
@@ -532,7 +532,7 @@
        <property name="maximumSize">
         <size>
          <width>300</width>
-         <height>75</height>
+         <height>50</height>
         </size>
        </property>
        <property name="text">
@@ -545,7 +545,7 @@
        <property name="maximumSize">
         <size>
          <width>300</width>
-         <height>75</height>
+         <height>50</height>
         </size>
        </property>
        <property name="text">

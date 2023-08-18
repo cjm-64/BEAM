@@ -13,7 +13,7 @@ echo World!
 
 killall matchbox-keyboard
 
-sudo ./pupil-libuvc-qt
+sudo ./BEAM
 
 mv output.csv "$file_name.csv"
 

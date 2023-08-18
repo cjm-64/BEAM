@@ -86,7 +86,7 @@ Scalar col = Scalar(0, 255, 0); //Color for drawing on frame
 //Data Saving
 int save_placeholder[4] = {0};
 int calibration_number = 1;
-string headers[3][1] = {{"Right Calibration"}, {"Left Calibration"}, {"Test Data"}};
+string headers[3][1] = {{"Right_Calibration"}, {"Left_Calibration"}, {"Test_Data"}};
 int header_num = 0;
 ofstream Output_file;
 
@@ -270,6 +270,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->LeftCal->setEnabled(false);
     ui->RunTest->setEnabled(false);
     ui->RunTherapy->setEnabled(false);
+    ui->Degree_3_Button->setEnabled(false);
+    ui->Degree_5_Button->setEnabled(false);
 
     //Hide the buttons to show video to align the cameras
     ui->gridLayoutWidget->setVisible(false);
@@ -296,10 +298,10 @@ void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
 
     if (eye == 0 && headerwritten == 0){
         if(step == 3){
-            file << headers[step-1][0] << " " << Test_Time_H << ":" << Test_Time_M << "(H:M)" << ",";
+            file << headers[step-1][0] << "_" << Test_Time_H << "_" << Test_Time_M << ",";
         }
         else{
-            file << headers[step-1][0] << ",";
+            file << headers[step-1][0] << "_" << calibration_number << "_deg" << ",";
         }
         file << pd.X_Pos << "," << pd.Y_Pos << ",";
         headerwritten = 1;
@@ -551,9 +553,6 @@ void MainWindow::on_RightCal_clicked()
     DisplaySelector = 0;
     RecordingTimer = CalibrationTime;
 
-
-
-    ui->LeftCal->setEnabled(true);
     headerwritten = 0;
 }
 
@@ -561,7 +560,7 @@ void MainWindow::on_LeftCal_clicked()
 {
     //Show/Hide ui elements
     ui->gridLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
+    ui->verticalLayoutWidget->setVisible(true);
 
     //Disable Sliders
     ui->R_ThresholdSlider->setEnabled(false);
@@ -573,9 +572,6 @@ void MainWindow::on_LeftCal_clicked()
     DisplaySelector = 0;
     RecordingTimer = CalibrationTime;
 
-    startCamera();
-
-    ui->RunTest->setEnabled(true);
     headerwritten = 0;
 }
 
@@ -583,8 +579,46 @@ void MainWindow::on_Degree_1_Button_clicked()
 {
     calibration_number = 1;
 
+    //Hide Buttons and show cameras
+    ui->verticalLayoutWidget->setVisible(false);
+    ui->horizontalLayoutWidget->setVisible(true);
+
     startCamera();
+    ui->Degree_3_Button->setEnabled(true);
 }
+
+void MainWindow::on_Degree_3_Button_clicked()
+{
+    calibration_number = 3;
+
+    //Hide Buttons and show cameras
+    ui->verticalLayoutWidget->setVisible(false);
+    ui->horizontalLayoutWidget->setVisible(true);
+
+    startCamera();
+    ui->Degree_5_Button->setEnabled(true);
+}
+
+void MainWindow::on_Degree_5_Button_clicked()
+{
+    calibration_number = 5;
+
+    //Hide Buttons and show cameras
+    ui->verticalLayoutWidget->setVisible(false);
+    ui->horizontalLayoutWidget->setVisible(true);
+
+    startCamera();
+    if (calibration_number == 5 && step == 1){
+        ui->LeftCal->setEnabled(true);
+        ui->Degree_3_Button->setEnabled(false);
+        ui->Degree_5_Button->setEnabled(false);
+    }
+    if (calibration_number == 5 && step == 2){
+        ui->RunTest->setEnabled(true);
+    }
+
+}
+
 
 void MainWindow::on_RunTest_clicked()
 {
@@ -610,8 +644,6 @@ void MainWindow::on_RunTest_clicked()
     startCamera();
     headerwritten = 0;
 }
-
-
 
 //Camera related
 void MainWindow::on_R_CloseCam_clicked()
@@ -647,16 +679,3 @@ void MainWindow::on_L_ThresholdSlider_valueChanged(int LThresh)
     ui->L_ThresholdDisplay->display(LThresh);
     FrameProc[1].thresh_val = LThresh;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
