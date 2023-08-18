@@ -52,5 +52,7 @@ private slots:
     void on_LeftCal_clicked();
     void on_RunTest_clicked();
     void on_Degree_1_Button_clicked();
+    void on_Degree_3_Button_clicked();
+    void on_Degree_5_Button_clicked();
 };
 #endif // MAINWINDOW_H
