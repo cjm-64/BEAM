@@ -1,8 +1,3 @@
-// ToDo:
-//Figure out some way to make sure that 0 is always the right eye
-//Implement saving function
-//Implement file naming
-
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "globals.h"
@@ -26,8 +21,6 @@
 #include "opencv2/videoio.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
-
-
 
 //Namespaces
 using namespace std;
@@ -242,23 +235,18 @@ void MainWindow::initFrameProc(){
     }
 }
 
-
 void MainWindow::alignCameras(){
     ColorOrBW = 0;
     RecordingTimer = SetUpTime;
     startCamera();
 }
 
-
-
-//QT functions, this one runs on program start
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
-    //Timer Set up
     timer = new QTimer(this);
 
     //Initialize cameras and data saving methods
@@ -266,32 +254,21 @@ MainWindow::MainWindow(QWidget *parent)
     initFrameProc();
 
     //Turn off buttons before doing anything
-    ui->RightCal->setEnabled(false);
-    ui->LeftCal->setEnabled(false);
-    ui->RunTest->setEnabled(false);
-    ui->RunTherapy->setEnabled(false);
-    ui->Degree_3_Button->setEnabled(false);
-    ui->Degree_5_Button->setEnabled(false);
+    ui->RightCalibration->setEnabled(false);
+    ui->LeftCalibration->setEnabled(false);
+    ui->RunDiagnostic->setEnabled(false);
+    ui->RunTherapeutic->setEnabled(false);
+    ui->Ten_PD->setEnabled(false);
+    ui->Fifteen_PD->setEnabled(false);
 
-    //Hide the buttons to show video to align the cameras
-    ui->gridLayoutWidget->setVisible(false);
+    //Hide Display, Controls, & Cal Buttons
     ui->verticalLayoutWidget->setVisible(false);
+    ui->verticalLayoutWidget_2->setVisible(false);
 
-    //Disable sliders because we're just setting the cameras up
-    ui->R_ThresholdSlider->setEnabled(false);
-    ui->R_RadiusSlider->setEnabled(false);
-    ui->L_ThresholdSlider->setEnabled(false);
-    ui->L_RadiusSlider->setEnabled(false);
-
-    //Call to open cameras for alignment
     alignCameras();
     ColorOrBW = 0;
-}
 
-MainWindow::~MainWindow(){
-    delete ui;
 }
-
 
 //Functions to collect and write data to file
 void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
@@ -314,9 +291,6 @@ void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
     }
 
 }
-
-
-
 
 //Functions to open camera stream and update the display
 void MainWindow::startCamera(){
@@ -471,17 +445,14 @@ void MainWindow::updateFrame(){
 }
 
 
-
-//Functions to reset after cameras have been opened
+//Closing things
 void MainWindow::returntoHomeScreen(){
-    //Stop Timers
+    //Stop Timer
     timer->stop();
 
-    //Hide video and controls
-    ui->horizontalLayoutWidget->setVisible(false);
-
-    //Hide Cal Buttons
+    //Hide displays, controls & cal buttons
     ui->verticalLayoutWidget->setVisible(false);
+    ui->verticalLayoutWidget_2->setVisible(false);
 
     //Show home screen
     ui->gridLayoutWidget->setVisible(true);
@@ -498,10 +469,14 @@ void MainWindow::closeCameras(){
     returntoHomeScreen();
 }
 
+void MainWindow::on_CloseDisplay_and_Control_clicked()
+{
+    closeCameras();
+}
 
-
-//Home Screen Buttons
-void MainWindow::on_Quit_clicked(){
+//Home Screen
+void MainWindow::on_Quit_clicked()
+{
     for(int i = 0; i<2; i++){
         uvc_exit(CamStreams[i].ctx);
         cout << "Closed Cam " << i << endl;
@@ -510,45 +485,51 @@ void MainWindow::on_Quit_clicked(){
     close();
 }
 
-void MainWindow::on_TrackingSetUp_clicked(){    
-    //Show/Hide ui elements
+void MainWindow::on_TrackingSetUp_clicked()
+{
+    //Hide home screen and cal buttons; Show displays and controls
     ui->gridLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
+    ui->verticalLayoutWidget_2->setVisible(false);
+    ui->verticalLayoutWidget->setVisible(true);
 
-    //Enable sliders
-    ui->R_ThresholdSlider->setEnabled(true);
-    ui->R_RadiusSlider->setEnabled(true);
-    ui->L_ThresholdSlider->setEnabled(true);
-    ui->L_RadiusSlider->setEnabled(true);
+    //Enable Sliders (only needed to allow redoing tracking after calibration)
+    ui->RightEyeThresholdSlider->setEnabled(true);
+    ui->RightEyeRadiusSlider->setEnabled(true);
+    ui->LeftEyeThresholdSlider->setEnabled(true);
+    ui->LeftEyeRadiusSlider->setEnabled(true);
 
-    //Set right slider values
-    ui->R_ThresholdSlider->setValue(R_thresh_val);
-    ui->R_RadiusSlider->setValue(R_max_rad);
-
-    //Set left slider values
-    ui->L_ThresholdSlider->setValue(L_thresh_val);
-    ui->L_RadiusSlider->setValue(L_max_rad);
+    //Set slider values
+    ui->RightEyeThresholdSlider->setValue(FrameProc[0].thresh_val);
+    ui->RightEyeRadiusSlider->setValue(FrameProc[0].max_radius);
+    ui->LeftEyeThresholdSlider->setValue(FrameProc[1].thresh_val);
+    ui->LeftEyeRadiusSlider->setValue(FrameProc[1].max_radius);
 
     DisplaySelector = 0;
     DataSavingFlag = 0;
     RecordingTimer = SetUpTime;
     startCamera();
 
-    ui->RightCal->setEnabled(true);
+    ui->RightCalibration->setEnabled(true);
 }
 
-void MainWindow::on_RightCal_clicked()
-{
-    //Show/Hide ui elements
+void MainWindow::calibrationSetUp(){
+    //Hide Home Screen and Display/Controls
     ui->gridLayoutWidget->setVisible(false);
-    ui->verticalLayoutWidget->setVisible(true);
+    ui->verticalLayoutWidget->setVisible(false);
+
+    //Show Calibration amounts
+    ui->verticalLayoutWidget_2->setVisible(true);
 
     //Disable Sliders
-    ui->R_ThresholdSlider->setEnabled(false);
-    ui->R_RadiusSlider->setEnabled(false);
-    ui->L_ThresholdSlider->setEnabled(false);
-    ui->L_RadiusSlider->setEnabled(false);
+    ui->RightEyeThresholdSlider->setEnabled(false);
+    ui->RightEyeRadiusSlider->setEnabled(false);
+    ui->LeftEyeThresholdSlider->setEnabled(false);
+    ui->LeftEyeRadiusSlider->setEnabled(false);
+}
 
+void MainWindow::on_RightCalibration_clicked()
+{
+    calibrationSetUp();
     step = 1;
     DisplaySelector = 0;
     RecordingTimer = CalibrationTime;
@@ -556,17 +537,9 @@ void MainWindow::on_RightCal_clicked()
     headerwritten = 0;
 }
 
-void MainWindow::on_LeftCal_clicked()
+void MainWindow::on_LeftCalibration_clicked()
 {
-    //Show/Hide ui elements
-    ui->gridLayoutWidget->setVisible(false);
-    ui->verticalLayoutWidget->setVisible(true);
-
-    //Disable Sliders
-    ui->R_ThresholdSlider->setEnabled(false);
-    ui->R_RadiusSlider->setEnabled(false);
-    ui->L_ThresholdSlider->setEnabled(false);
-    ui->L_RadiusSlider->setEnabled(false);
+    calibrationSetUp();
 
     step = 2;
     DisplaySelector = 0;
@@ -575,67 +548,25 @@ void MainWindow::on_LeftCal_clicked()
     headerwritten = 0;
 }
 
-void MainWindow::on_Degree_1_Button_clicked()
+void MainWindow::on_RunDiagnostic_clicked()
 {
-    calibration_number = 1;
+    //Hide home screen and cal buttons
+    ui->gridLayoutWidget->setEnabled(false);
+    ui->verticalLayoutWidget_2->setEnabled(false);
 
-    //Hide Buttons and show cameras
-    ui->verticalLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
+    //Show display and controls
+    ui->verticalLayoutWidget->setEnabled(true);
 
-    startCamera();
-    ui->Degree_3_Button->setEnabled(true);
-}
-
-void MainWindow::on_Degree_3_Button_clicked()
-{
-    calibration_number = 3;
-
-    //Hide Buttons and show cameras
-    ui->verticalLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
-
-    startCamera();
-    ui->Degree_5_Button->setEnabled(true);
-}
-
-void MainWindow::on_Degree_5_Button_clicked()
-{
-    calibration_number = 5;
-
-    //Hide Buttons and show cameras
-    ui->verticalLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
-
-    startCamera();
-    if (calibration_number == 5 && step == 1){
-        ui->LeftCal->setEnabled(true);
-        ui->Degree_3_Button->setEnabled(false);
-        ui->Degree_5_Button->setEnabled(false);
-    }
-    if (calibration_number == 5 && step == 2){
-        ui->RunTest->setEnabled(true);
-    }
-
-}
-
-
-void MainWindow::on_RunTest_clicked()
-{
-    //Show/Hide ui elements
-    ui->gridLayoutWidget->setVisible(false);
-    ui->horizontalLayoutWidget->setVisible(true);
-
-    //Enable Sliders
-    ui->R_ThresholdSlider->setEnabled(true);
-    ui->R_RadiusSlider->setEnabled(true);
-    ui->L_ThresholdSlider->setEnabled(true);
-    ui->L_RadiusSlider->setEnabled(true);
+    //Enable sliders
+    ui->RightEyeThresholdSlider->setEnabled(true);
+    ui->RightEyeRadiusSlider->setEnabled(true);
+    ui->LeftEyeThresholdSlider->setEnabled(true);
+    ui->LeftEyeRadiusSlider->setEnabled(true);
 
     step = 3;
     DisplaySelector = 0;
 
-    settime ST;
+    Settime ST;
     ST.setModal(true);
     ST.exec();
 
@@ -645,37 +576,77 @@ void MainWindow::on_RunTest_clicked()
     headerwritten = 0;
 }
 
-//Camera related
-void MainWindow::on_R_CloseCam_clicked()
+//Calibration
+void MainWindow::on_Five_PD_clicked()
 {
-    closeCameras();
+    calibration_number = 5;
+
+    //Hide cal buttons and show displays
+    ui->verticalLayoutWidget_2->setVisible(false);
+    ui->verticalLayoutWidget->setVisible(true);
+
+    startCamera();
+    ui->Ten_PD->setEnabled(true);
 }
 
-void MainWindow::on_L_CloseCam_clicked()
+void MainWindow::on_Ten_PD_clicked()
 {
-    closeCameras();
+    calibration_number = 10;
+
+    //Hide cal buttons and show displays
+    ui->verticalLayoutWidget_2->setVisible(false);
+    ui->verticalLayoutWidget->setVisible(true);
+
+    startCamera();
+    ui->Fifteen_PD->setEnabled(true);
 }
 
-void MainWindow::on_R_RadiusSlider_valueChanged(int RRad)
+void MainWindow::on_Fifteen_PD_clicked()
 {
-    ui->R_RadiusDisplay->display(RRad);
-    FrameProc[0].max_radius = RRad;
+    calibration_number = 15;
+
+    //Hide cal buttons and show displays
+    ui->verticalLayoutWidget_2->setVisible(false);
+    ui->verticalLayoutWidget->setVisible(true);
+
+    startCamera();
+
+    if (calibration_number == 15 && step == 1){
+        ui->LeftCalibration->setEnabled(false);
+        ui->Ten_PD->setEnabled(false);
+        ui->Fifteen_PD->setEnabled(false);
+    }
+    if (calibration_number == 15 && step == 2){
+        ui->RunDiagnostic->setEnabled(true);
+    }
 }
 
-void MainWindow::on_R_ThresholdSlider_valueChanged(int RThresh)
+//Sliders
+void MainWindow::on_RightEyeThresholdSlider_valueChanged(int RThresh)
 {
-    ui->R_ThresholdDisplay->display(RThresh);
+    ui->RightEyeThresholdDisplay->display(RThresh);
     FrameProc[0].thresh_val = RThresh;
 }
 
-void MainWindow::on_L_RadiusSlider_valueChanged(int LRad)
+void MainWindow::on_LeftEyeThresholdSlider_valueChanged(int LThresh)
 {
-    ui->L_RadiusDisplay->display(LRad);
+    ui->LeftEyeThresholdDisplay->display(LThresh);
+    FrameProc[1].thresh_val = LThresh;
+}
+
+void MainWindow::on_RightEyeRadiusSlider_valueChanged(int RRad)
+{
+    ui->RightEyeRadiusDisplay->display(RRad);
+    FrameProc[0].max_radius = RRad;
+}
+
+void MainWindow::on_LeftEyeRadiusSlider_valueChanged(int LRad)
+{
+    ui->LeftEyeRadiusDisplay->display(LRad);
     FrameProc[1].max_radius = LRad;
 }
 
-void MainWindow::on_L_ThresholdSlider_valueChanged(int LThresh)
+MainWindow::~MainWindow()
 {
-    ui->L_ThresholdDisplay->display(LThresh);
-    FrameProc[1].thresh_val = LThresh;
+    delete ui;
 }

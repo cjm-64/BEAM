@@ -36,23 +36,21 @@ private slots:
     void returntoHomeScreen();
     void closeCameras();
 
-    //Sliders
-    void on_R_RadiusSlider_valueChanged(int value);
-    void on_R_ThresholdSlider_valueChanged(int value);
-    void on_L_RadiusSlider_valueChanged(int value);
-    void on_L_ThresholdSlider_valueChanged(int value);
-
     //Actions
     void alignCameras();
+    void calibrationSetUp();
     void on_Quit_clicked();
     void on_TrackingSetUp_clicked();
-    void on_R_CloseCam_clicked();
-    void on_L_CloseCam_clicked();
-    void on_RightCal_clicked();
-    void on_LeftCal_clicked();
-    void on_RunTest_clicked();
-    void on_Degree_1_Button_clicked();
-    void on_Degree_3_Button_clicked();
-    void on_Degree_5_Button_clicked();
+    void on_RightCalibration_clicked();
+    void on_LeftCalibration_clicked();
+    void on_Five_PD_clicked();
+    void on_Ten_PD_clicked();
+    void on_Fifteen_PD_clicked();
+    void on_RunDiagnostic_clicked();
+    void on_CloseDisplay_and_Control_clicked();
+    void on_RightEyeThresholdSlider_valueChanged(int value);
+    void on_LeftEyeThresholdSlider_valueChanged(int value);
+    void on_RightEyeRadiusSlider_valueChanged(int value);
+    void on_LeftEyeRadiusSlider_valueChanged(int value);
 };
 #endif // MAINWINDOW_H
