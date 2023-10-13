@@ -278,7 +278,7 @@ void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
             file << headers[step-1][0] << "_" << Test_Time_H << "_" << Test_Time_M << ",";
         }
         else{
-            file << headers[step-1][0] << "_" << calibration_number << "_deg" << ",";
+            file << headers[step-1][0] << "_" << calibration_number << "_pd" << ",";
         }
         file << pd.X_Pos << "," << pd.Y_Pos << ",";
         headerwritten = 1;
