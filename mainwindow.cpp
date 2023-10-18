@@ -262,7 +262,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->Fifteen_PD->setEnabled(false);
 
     //Hide Display, Controls, & Cal Buttons
-    ui->verticalLayoutWidget->setVisible(false);
+    ui->gridLayoutWidget->setVisible(false);
     ui->verticalLayoutWidget_2->setVisible(false);
 
     alignCameras();
@@ -551,11 +551,11 @@ void MainWindow::on_LeftCalibration_clicked()
 void MainWindow::on_RunDiagnostic_clicked()
 {
     //Hide home screen and cal buttons
-    ui->gridLayoutWidget->setEnabled(false);
-    ui->verticalLayoutWidget_2->setEnabled(false);
+    ui->gridLayoutWidget->setVisible(false);
+    ui->verticalLayoutWidget_2->setVisible(false);
 
     //Show display and controls
-    ui->verticalLayoutWidget->setEnabled(true);
+    ui->verticalLayoutWidget->setVisible(true);
 
     //Enable sliders
     ui->RightEyeThresholdSlider->setEnabled(true);
@@ -612,7 +612,7 @@ void MainWindow::on_Fifteen_PD_clicked()
     startCamera();
 
     if (calibration_number == 15 && step == 1){
-        ui->LeftCalibration->setEnabled(false);
+        ui->LeftCalibration->setEnabled(true);
         ui->Ten_PD->setEnabled(false);
         ui->Fifteen_PD->setEnabled(false);
     }

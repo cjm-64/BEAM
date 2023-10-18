@@ -15,6 +15,6 @@ killall matchbox-keyboard
 
 sudo ./BEAM
 
-mv output.csv "$file_name.csv"
+mv output.csv "Data/$file_name.csv"
 
 #ps aux | grep -i | awk {'print $2'} | xargs kill -9

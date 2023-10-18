@@ -5,7 +5,7 @@ int Test_Time = 0; //Total time in seconds
 int Test_Time_Frames = 0; //Time in frames (seconds * 30)
 int Test_Time_M = 1; //Minutes component of test time
 int Test_Time_H = 0; //Hours components of test time
-int SetUpTime = 300000; //5 minutes to set up tacking
+int SetUpTime = 300000; //5 minutes to set up tracking
 int CalibrationTime = 3000; //3 seconds of calibration (3*30fps = 90)
 int TimeCount = 0; //Frame counter for timing
 int RecordingTimer = 0; //Flag to set how long to record for
