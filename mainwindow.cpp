@@ -416,21 +416,21 @@ void MainWindow::updateFrame(){
         if (i == 0){
             if (ColorOrBW == 0){
                 //Right Eye Color frame
-                flip(image,final_image, 0);
+                flip(image,final_image, -1);
             }
             else{
                 //Right Eye BW frame
-                flip(bpcIMG,final_image, 0);
+                flip(bpcIMG,final_image, -1);
             }
             ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) final_image.data, final_image.cols, final_image.rows, final_image.step, QImage::Format_RGB888)));
         }
         else{
             if (ColorOrBW == 0){
-                //Right Eye Color frame
+                //Left Eye Color frame
                 image.copyTo(final_image);
             }
             else{
-                //Right Eye BW frame
+                //Left Eye BW frame
                 bpcIMG.copyTo(final_image);
             }
             ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) final_image.data, final_image.cols, final_image.rows, final_image.step, QImage::Format_RGB888)));
