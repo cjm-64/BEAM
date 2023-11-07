@@ -265,6 +265,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->gridLayoutWidget->setVisible(false);
     ui->verticalLayoutWidget_2->setVisible(false);
 
+    //Disable sliders
+
+    disableSliders();
     alignCameras();
     ColorOrBW = 0;
 
@@ -306,7 +309,7 @@ void MainWindow::startCamera(){
         connect(timer, SIGNAL(timeout()), this, SLOT(checkElapsedTime()));
         qDebug() << "Slot Connected";
     }
-    timer->start(33);
+    timer->start(20);
     qDebug() << "Timer Started";
 }
 
@@ -493,10 +496,7 @@ void MainWindow::on_TrackingSetUp_clicked()
     ui->verticalLayoutWidget->setVisible(true);
 
     //Enable Sliders (only needed to allow redoing tracking after calibration)
-    ui->RightEyeThresholdSlider->setEnabled(true);
-    ui->RightEyeRadiusSlider->setEnabled(true);
-    ui->LeftEyeThresholdSlider->setEnabled(true);
-    ui->LeftEyeRadiusSlider->setEnabled(true);
+    enableSliders();
 
     //Set slider values
     ui->RightEyeThresholdSlider->setValue(FrameProc[0].thresh_val);
@@ -521,10 +521,7 @@ void MainWindow::calibrationSetUp(){
     ui->verticalLayoutWidget_2->setVisible(true);
 
     //Disable Sliders
-    ui->RightEyeThresholdSlider->setEnabled(false);
-    ui->RightEyeRadiusSlider->setEnabled(false);
-    ui->LeftEyeThresholdSlider->setEnabled(false);
-    ui->LeftEyeRadiusSlider->setEnabled(false);
+    disableSliders();
 }
 
 void MainWindow::on_RightCalibration_clicked()
@@ -558,10 +555,7 @@ void MainWindow::on_RunDiagnostic_clicked()
     ui->verticalLayoutWidget->setVisible(true);
 
     //Enable sliders
-    ui->RightEyeThresholdSlider->setEnabled(true);
-    ui->RightEyeRadiusSlider->setEnabled(true);
-    ui->LeftEyeThresholdSlider->setEnabled(true);
-    ui->LeftEyeRadiusSlider->setEnabled(true);
+    enableSliders();
 
     step = 3;
     DisplaySelector = 0;
@@ -644,6 +638,20 @@ void MainWindow::on_LeftEyeRadiusSlider_valueChanged(int LRad)
 {
     ui->LeftEyeRadiusDisplay->display(LRad);
     FrameProc[1].max_radius = LRad;
+}
+
+void MainWindow::disableSliders(){
+    ui->RightEyeThresholdSlider->setEnabled(false);
+    ui->RightEyeRadiusSlider->setEnabled(false);
+    ui->LeftEyeThresholdSlider->setEnabled(false);
+    ui->LeftEyeRadiusSlider->setEnabled(false);
+}
+
+void MainWindow::enableSliders(){
+    ui->RightEyeThresholdSlider->setEnabled(true);
+    ui->RightEyeRadiusSlider->setEnabled(true);
+    ui->LeftEyeThresholdSlider->setEnabled(true);
+    ui->LeftEyeRadiusSlider->setEnabled(true);
 }
 
 MainWindow::~MainWindow()

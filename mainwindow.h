@@ -38,6 +38,8 @@ private slots:
 
     //Actions
     void alignCameras();
+    void disableSliders();
+    void enableSliders();
     void calibrationSetUp();
     void on_Quit_clicked();
     void on_TrackingSetUp_clicked();
