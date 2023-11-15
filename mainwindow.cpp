@@ -309,7 +309,7 @@ void MainWindow::startCamera(){
         connect(timer, SIGNAL(timeout()), this, SLOT(checkElapsedTime()));
         qDebug() << "Slot Connected";
     }
-    timer->start(20);
+    timer->start(14);
     qDebug() << "Timer Started";
 }
 
