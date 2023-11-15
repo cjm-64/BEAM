@@ -15,7 +15,7 @@ killall matchbox-keyboard
 
 sudo ./BEAM
 
-cp output.csv "/media/beam/$file_name.csv"
+cp output.csv "/media/beam/BEAM_DATA/$file_name.csv"
 cp output.csv "Data/$file_name.csv"
 rm output.csv
 
