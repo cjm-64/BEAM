@@ -379,11 +379,22 @@ void MainWindow::updateFrame(){
             uvc_free_frame(rgb);
         }
         else{
-            printf("Error, somehow you got to a frame format that doesn't exist\n");
+            printf("Error, somehow you got to a frame format that doesn't exist.\nBravo tbh\n");
         }
 
         Mat grayIMG, binaryIMG, bpcIMG; //Create new Mats to to image processing steps
-        cvtColor(image, grayIMG, COLOR_BGR2GRAY); //Convert to grayscale
+
+        if (i == 0){
+            //flip the image prior to processing
+            Mat flipImage;
+            flip(image,flipImage, -1);
+            cvtColor(flipImage, grayIMG, COLOR_BGR2GRAY); //Convert to grayscale
+            flipImage.release();
+        }
+        else{
+            cvtColor(image, grayIMG, COLOR_BGR2GRAY); //Convert to grayscale
+        }
+
         threshold(grayIMG, binaryIMG, FrameProc[i].thresh_val, thresh_max_val, thresh_type); //Convert to binary based on thresh; controlled by slider
         cvtColor(binaryIMG, bpcIMG, COLOR_GRAY2RGB); // enable color on binary so we can draw on it later
 
@@ -423,7 +434,7 @@ void MainWindow::updateFrame(){
             }
             else{
                 //Right Eye BW frame
-                flip(bpcIMG,final_image, -1);
+                bpcIMG.copyTo(final_image);
             }
             ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) final_image.data, final_image.cols, final_image.rows, final_image.step, QImage::Format_RGB888)));
         }
