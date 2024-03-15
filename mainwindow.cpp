@@ -380,7 +380,7 @@ void MainWindow::updateFrame(){
             printf("Error, somehow you got to a frame format that doesn't exist.\nBravo tbh\n");
         }
 
-        Mat grayIMG, binaryIMG, bpcIMG; //Create new Mats to to image processing steps
+        Mat grayIMG, binaryIMG, bpcIMG, mask, temp; //Create new Mats to to image processing steps
 
         if (i == 0){
             //flip the image prior to processing
@@ -394,7 +394,15 @@ void MainWindow::updateFrame(){
         }
 
         threshold(grayIMG, binaryIMG, FrameProc[i].thresh_val, thresh_max_val, thresh_type); //Convert to binary based on thresh; controlled by slider
-        cvtColor(binaryIMG, bpcIMG, COLOR_GRAY2RGB); // enable color on binary so we can draw on it later
+//        cvtColor(binaryIMG, bpcIMG, COLOR_GRAY2RGB); // enable color on binary so we can draw on it later
+
+        inRange(binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), mask);
+        grayIMG.copyTo(temp);
+        mask.release();
+
+        temp.setTo(Scalar(255, 255, 255), mask);
+        cvtColor(temp, bpcIMG, COLOR_GRAY2RGB);
+        temp.release();
 
         PositionData pd;
         vector<Vec3f> circles;
