@@ -4,21 +4,19 @@
 #include <QDialog>
 
 namespace Ui {
-class settime;
+class Settime;
 }
 
-class settime : public QDialog
+class Settime : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit settime(QWidget *parent = nullptr);
-    ~settime();
+    explicit Settime(QWidget *parent = nullptr);
+    ~Settime();
 
 private:
-    Ui::settime *ui;
-
-
+    Ui::Settime *ui;
 
 private slots:
     void on_HoursSlider_valueChanged(int value);
