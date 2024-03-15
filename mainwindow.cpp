@@ -260,8 +260,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->RunTherapeutic->setEnabled(false);
     ui->Ten_PD->setEnabled(false);
     ui->Fifteen_PD->setEnabled(false);
-
-    //Hide Display, Controls, & Cal Buttons
     ui->gridLayoutWidget->setVisible(false);
     ui->verticalLayoutWidget_2->setVisible(false);
 
