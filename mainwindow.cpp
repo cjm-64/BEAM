@@ -74,7 +74,7 @@ tjhandle decompressor = tjInitDecompress();
 QElapsedTimer elapsed_timer;
 
 //Other global declarations
-Scalar col = Scalar(0, 0, 255); //Color for drawing on frame
+Scalar col = Scalar(255, 0, 0); //Color for drawing on frame
 
 //Data Saving
 int save_placeholder[4] = {0};
@@ -427,8 +427,8 @@ void MainWindow::updateFrame(){
         }
 
         //Draw Circles on Black and White
-        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), 1, col,1,LINE_8);
-        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), pd.Radius, col,1,LINE_8);
+        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), 1, col,2,LINE_8);
+        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), pd.Radius, col,2,LINE_8);
 
         Mat finalImage;
         //Display Image
