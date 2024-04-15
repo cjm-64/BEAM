@@ -19,10 +19,9 @@ private:
     Ui::Settime *ui;
 
 private slots:
+
     void on_HoursSlider_valueChanged(int value);
-
     void on_MinutesSlider_valueChanged(int value);
-
     void on_ConfirmTime_clicked();
 };
 
