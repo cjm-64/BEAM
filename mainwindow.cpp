@@ -74,7 +74,7 @@ tjhandle decompressor = tjInitDecompress();
 QElapsedTimer elapsed_timer;
 
 //Other global declarations
-Scalar col = Scalar(0, 255, 0); //Color for drawing on frame
+Scalar col = Scalar(255, 0, 0); //Color for drawing on frame
 
 //Data Saving
 int save_placeholder[4] = {0};
@@ -380,7 +380,7 @@ void MainWindow::updateFrame(){
             printf("Error, somehow you got to a frame format that doesn't exist.\nBravo tbh\n");
         }
 
-        Mat grayIMG, binaryIMG, bpcIMG; //Create new Mats to to image processing steps
+        Mat grayIMG, binaryIMG, greyPlusColor, binaryOneMask, temp; //Create new Mats to to image processing steps
 
         if (i == 0){
             //flip the image prior to processing
@@ -394,7 +394,15 @@ void MainWindow::updateFrame(){
         }
 
         threshold(grayIMG, binaryIMG, FrameProc[i].thresh_val, thresh_max_val, thresh_type); //Convert to binary based on thresh; controlled by slider
-        cvtColor(binaryIMG, bpcIMG, COLOR_GRAY2RGB); // enable color on binary so we can draw on it later
+//        cvtColor(binaryIMG, greyPlusColor, COLOR_GRAY2RGB); // enable color on binary so we can draw on it later
+
+        inRange(binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), binaryOneMask);
+        grayIMG.copyTo(temp);
+
+        temp.setTo(Scalar(255, 255, 255), binaryOneMask);
+        binaryOneMask.release();
+        cvtColor(temp, greyPlusColor, COLOR_GRAY2RGB);
+        temp.release();
 
         PositionData pd;
         vector<Vec3f> circles;
@@ -419,40 +427,40 @@ void MainWindow::updateFrame(){
         }
 
         //Draw Circles on Black and White
-        circle(bpcIMG, Point(pd.X_Pos, pd.Y_Pos), 1, col,1,LINE_8);
-        circle(bpcIMG, Point(pd.X_Pos, pd.Y_Pos), pd.Radius, col,1,LINE_8);
+        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), 1, col,2,LINE_8);
+        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), pd.Radius, col,2,LINE_8);
 
-        Mat final_image;
+        Mat finalImage;
         //Display Image
         //Check for which eye and if grey or Black and White (binary)
         if (i == 0){
             if (ColorOrBW == 0){
                 //Right Eye Color frame
-                flip(image,final_image, -1);
+                flip(image,finalImage, -1);
             }
             else{
                 //Right Eye BW frame
-                bpcIMG.copyTo(final_image);
+                greyPlusColor.copyTo(finalImage);
             }
-            ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) final_image.data, final_image.cols, final_image.rows, final_image.step, QImage::Format_RGB888)));
+            ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) finalImage.data, finalImage.cols, finalImage.rows, finalImage.step, QImage::Format_RGB888)));
         }
         else{
             if (ColorOrBW == 0){
                 //Left Eye Color frame
-                image.copyTo(final_image);
+                image.copyTo(finalImage);
             }
             else{
                 //Left Eye BW frame
-                bpcIMG.copyTo(final_image);
+                greyPlusColor.copyTo(finalImage);
             }
-            ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) final_image.data, final_image.cols, final_image.rows, final_image.step, QImage::Format_RGB888)));
+            ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) finalImage.data, finalImage.cols, finalImage.rows, finalImage.step, QImage::Format_RGB888)));
         }
 
         //Free memory
         image.release();
         grayIMG.release();
         binaryIMG.release();
-        bpcIMG.release();
+        greyPlusColor.release();
     }
 }
 

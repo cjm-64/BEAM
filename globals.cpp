@@ -18,7 +18,7 @@ int Width = 160;
 int Height = 120;
 
 //Both Circles
-int thresh_max_val = 200; //Max threshold value
+int thresh_max_val = 255; //Max threshold value
 int thresh_type = 1; //Type of threshold, read OCV documentation
 int CED = 1; //For Circle tracking, read OCV documentation
 int Cent_D = 1; //For Circle tracking, read OCV documentation
