@@ -288,7 +288,7 @@ void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
         file << " ," << pd.X_Pos << "," << pd.Y_Pos << ",";
     }
     else{
-        file << pd.X_Pos << "," << pd.Y_Pos << "," << current_time/1000 << endl;
+        file << pd.X_Pos << "," << pd.Y_Pos << "," << current_time << endl;
     }
 
 }
@@ -323,8 +323,9 @@ void MainWindow::checkElapsedTime(){
 
 void MainWindow::updateFrame(){
 
-    qDebug() << elapsed_timer.elapsed();
-    float current_time = elapsed_timer.elapsed();
+    //Print time and calculate seconds for writing data to file later
+    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
+    float current_time = elapsed_timer.elapsed()/1000;
 
     uvc_frame_t *frame;
     uvc_error_t res;
@@ -351,7 +352,7 @@ void MainWindow::updateFrame(){
 //        printf("Eye %d: frame_format = %d, width = %d, height = %d, length = %lu\n", i, frame->frame_format, frameW, frameH, frameBytes);
 
         if (frame->frame_format == 7){
-            printf("Frame Format: MJPEG\n");
+//            printf("Frame Format: MJPEG\n");
             long unsigned int _jpegSize = frameBytes;
             unsigned char buffer[frameW*frameH*3];
             tjDecompress2(decompressor, (unsigned char *)frame->data, _jpegSize, buffer, frameW, 0, frameH, TJPF_RGB, TJFLAG_FASTDCT);
@@ -360,7 +361,7 @@ void MainWindow::updateFrame(){
             placeholder.release();
         }
         else if (frame->frame_format == 3){
-            printf("Frame Format: Other\n");
+//            printf("Frame Format: Other\n");
             uvc_frame_t *rgb;
             rgb = uvc_allocate_frame(frameW * frameH * 3);
             if (!rgb) {
