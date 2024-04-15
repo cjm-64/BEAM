@@ -420,7 +420,7 @@ void MainWindow::updateFrame(){
                 writeToFile(Output_file, pd, i, current_time);
             }
             else{
-                Output_file.open("output.csv");
+                Output_file.open(QCoreApplication::arguments()[1].toStdString().append(".csv"));
                 Output_file << "Header,Right_Eye_X,Right_Eye_Y,Left_Eye_X,Left_Eye_Y,Time_s" << endl;
                 writeToFile(Output_file, pd, i, current_time);
             }
