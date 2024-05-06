@@ -325,7 +325,7 @@ void MainWindow::updateFrame(){
 
     //Print time and calculate seconds for writing data to file later
     qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
-    float current_time = elapsed_timer.elapsed()/1000;
+    float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
 
     uvc_frame_t *frame;
     uvc_error_t res;
