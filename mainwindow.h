@@ -31,6 +31,7 @@ private slots:
     void startCamera();
     void checkElapsedTime();
     void updateFrame();
+    void initBoundingBox();
 
     //Reset Functions
     void returntoHomeScreen();
