@@ -25,12 +25,12 @@ int Cent_D = 1; //For Circle tracking, read OCV documentation
 
 //Right Circle
 int R_thresh_val = 50; //Threshold Value
-int R_max_rad = 50; //Radius value
+int R_max_rad = 25; //Radius value
 
 
 //Left Circle
 int L_thresh_val = 50; //Threshold Value
-int L_max_rad = 50; //Radius value
+int L_max_rad = 25; //Radius value
 
 //Misc
 int step = 0; //Define the step

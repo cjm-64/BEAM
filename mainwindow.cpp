@@ -60,10 +60,21 @@ struct PositionData{
     int Radius;
 };
 
+struct BoundingBox{
+    int startX;
+    int startY;
+    int endX;
+    int endY;
+    int startOrEndFlag;
+};
+
+
+
 //Instantiate global data strucutres
 CamInfo Cameras[2];
 StreamingInfo CamStreams[2];
 FrameProcessingInfo FrameProc[2];
+BoundingBox BoundBox[2];
 
 
 //Decompression
@@ -75,6 +86,8 @@ QElapsedTimer elapsed_timer;
 
 //Other global declarations
 Scalar col = Scalar(255, 0, 0); //Color for drawing on frame
+int boxThickness = 2;
+Scalar boxColour = Scalar(0,0,255);
 
 //Data Saving
 int save_placeholder[4] = {0};
@@ -235,6 +248,16 @@ void MainWindow::initFrameProc(){
     }
 }
 
+void MainWindow::initBoundingBox(){
+    for(int i=0; i<2; i++){
+        BoundBox[i].startX = 10;
+        BoundBox[i].startY = 10;
+        BoundBox[i].endX = 182;
+        BoundBox[i].endY = 182;
+        BoundBox[i].startOrEndFlag = 0;
+    }
+}
+
 void MainWindow::alignCameras(){
     ColorOrBW = 0;
     RecordingTimer = SetUpTime;
@@ -271,6 +294,38 @@ MainWindow::MainWindow(QWidget *parent)
 
 }
 
+//Function to update the bounding box for drawing
+void updateBoundingBox(int boxNum, int xPos, int yPos){
+    if (boxNum == 0){
+        if (BoundBox[boxNum].startOrEndFlag == 0){
+            //Top Left of box aka start
+            BoundBox[boxNum].startX = xPos-50;
+            BoundBox[boxNum].startY = yPos-50;
+            BoundBox[boxNum].startOrEndFlag = 1;
+        }
+        else{
+            //Bottom right aka end
+            BoundBox[boxNum].endX = xPos-50;
+            BoundBox[boxNum].endY = yPos-50;
+            BoundBox[boxNum].startOrEndFlag = 0;
+        }
+    }
+    else{
+        if (BoundBox[boxNum].startOrEndFlag == 0){
+            //Top Left of box aka start
+            BoundBox[boxNum].startX = xPos-558;
+            BoundBox[boxNum].startY = yPos-50;
+            BoundBox[boxNum].startOrEndFlag = 1;
+        }
+        else{
+            //Bottom right aka end
+            BoundBox[boxNum].endX = xPos-558;
+            BoundBox[boxNum].endY = yPos-50;
+            BoundBox[boxNum].startOrEndFlag = 0;
+        }
+    }
+}
+
 //Functions to collect and write data to file
 void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
 
@@ -288,7 +343,7 @@ void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
         file << " ," << pd.X_Pos << "," << pd.Y_Pos << ",";
     }
     else{
-        file << pd.X_Pos << "," << pd.Y_Pos << "," << current_time/1000 << endl;
+        file << pd.X_Pos << "," << pd.Y_Pos << "," << current_time << endl;
     }
 
 }
@@ -323,8 +378,9 @@ void MainWindow::checkElapsedTime(){
 
 void MainWindow::updateFrame(){
 
-    qDebug() << elapsed_timer.elapsed();
-    float current_time = elapsed_timer.elapsed();
+    //Print time and calculate seconds for writing data to file later
+    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
+    float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
 
     uvc_frame_t *frame;
     uvc_error_t res;
@@ -351,7 +407,7 @@ void MainWindow::updateFrame(){
 //        printf("Eye %d: frame_format = %d, width = %d, height = %d, length = %lu\n", i, frame->frame_format, frameW, frameH, frameBytes);
 
         if (frame->frame_format == 7){
-            printf("Frame Format: MJPEG\n");
+//            printf("Frame Format: MJPEG\n");
             long unsigned int _jpegSize = frameBytes;
             unsigned char buffer[frameW*frameH*3];
             tjDecompress2(decompressor, (unsigned char *)frame->data, _jpegSize, buffer, frameW, 0, frameH, TJPF_RGB, TJFLAG_FASTDCT);
@@ -360,7 +416,7 @@ void MainWindow::updateFrame(){
             placeholder.release();
         }
         else if (frame->frame_format == 3){
-            printf("Frame Format: Other\n");
+//            printf("Frame Format: Other\n");
             uvc_frame_t *rgb;
             rgb = uvc_allocate_frame(frameW * frameH * 3);
             if (!rgb) {
@@ -406,7 +462,7 @@ void MainWindow::updateFrame(){
 
         PositionData pd;
         vector<Vec3f> circles;
-        HoughCircles(binaryIMG, circles, HOUGH_GRADIENT, 1, 1000, CED, Cent_D, FrameProc[i].max_radius-2, FrameProc[i].max_radius);
+        HoughCircles(binaryIMG, circles, HOUGH_GRADIENT, 1, 1000, CED, Cent_D, FrameProc[i].max_radius-1, FrameProc[i].max_radius+1);
         Vec3i c;
         for( size_t i = 0; i < circles.size(); i++ ){
             c = circles[i];
@@ -420,7 +476,7 @@ void MainWindow::updateFrame(){
                 writeToFile(Output_file, pd, i, current_time);
             }
             else{
-                Output_file.open("output.csv");
+                Output_file.open(QCoreApplication::arguments()[1].toStdString().append(".csv"));
                 Output_file << "Header,Right_Eye_X,Right_Eye_Y,Left_Eye_X,Left_Eye_Y,Time_s" << endl;
                 writeToFile(Output_file, pd, i, current_time);
             }

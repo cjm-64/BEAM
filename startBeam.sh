@@ -13,10 +13,8 @@ echo World!
 
 killall matchbox-keyboard
 
-sudo ./BEAM
+sudo ./BEAM $file_name
 
 cp output.csv "/media/beam/BEAM_DATA/$file_name.csv"
 cp output.csv "Data/$file_name.csv"
-rm output.csv
 
-#ps aux | grep -i | awk {'print $2'} | xargs kill -9
