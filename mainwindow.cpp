@@ -85,9 +85,10 @@ tjhandle decompressor = tjInitDecompress();
 QElapsedTimer elapsed_timer;
 
 //Other global declarations
-Scalar col = Scalar(255, 0, 0); //Color for drawing on frame
 int boxThickness = 2;
-Scalar boxColour = Scalar(0,0,255);
+Scalar boxColour = Scalar(119, 3, 252);
+Scalar circleColour = Scalar(255, 0, 0); //Color for drawing on frame
+int clickOffsets[2] = {608,0};
 
 //Data Saving
 int save_placeholder[4] = {0};
@@ -248,6 +249,13 @@ void MainWindow::initFrameProc(){
     }
 }
 
+void MainWindow::alignCameras(){
+    ColorOrBW = 0;
+    RecordingTimer = SetUpTime;
+    startCamera();
+}
+
+// Functions for changing the bounding box
 void MainWindow::initBoundingBox(){
     for(int i=0; i<2; i++){
         BoundBox[i].startX = 10;
@@ -258,17 +266,43 @@ void MainWindow::initBoundingBox(){
     }
 }
 
-void MainWindow::alignCameras(){
-    ColorOrBW = 0;
-    RecordingTimer = SetUpTime;
-    startCamera();
+Mat composeFinalImage(Mat greyPlusBinary, Vec3i c, int eye){
+
+    rectangle(greyPlusBinary, Point(BoundBox[eye].startX, BoundBox[eye].startY), Point(BoundBox[eye].endX, BoundBox[eye].endY), boxColour, boxThickness);
+    int xShift = 0;
+    int yShift = 0;
+    if(BoundBox[eye].startX < BoundBox[eye].endX){
+        xShift = BoundBox[eye].startX;
+    }
+    else{
+        xShift = BoundBox[eye].endX;
+    }
+
+
+    if(BoundBox[eye].startY < BoundBox[eye].endY){
+        yShift = BoundBox[eye].startY;
+    }
+    else{
+        yShift = BoundBox[eye].endY;
+    }
+
+    //Draw Circles on Black and White
+    circle(greyPlusBinary, Point(c[0]+xShift, c[1]+yShift), 1, circleColour,2,LINE_8);
+    circle(greyPlusBinary, Point(c[0]+xShift, c[1]+yShift), c[2], circleColour,2,LINE_8);
+
+    return greyPlusBinary;
+
 }
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->menubar->hide();
+    setMouseTracking(true);
+    initBoundingBox();
 
     timer = new QTimer(this);
 
@@ -296,31 +330,32 @@ MainWindow::MainWindow(QWidget *parent)
 
 //Function to update the bounding box for drawing
 void updateBoundingBox(int boxNum, int xPos, int yPos){
-    if (boxNum == 0){
+
+    if (boxNum == 1){
         if (BoundBox[boxNum].startOrEndFlag == 0){
             //Top Left of box aka start
-            BoundBox[boxNum].startX = xPos-50;
-            BoundBox[boxNum].startY = yPos-50;
+            BoundBox[boxNum].startX = xPos-clickOffsets[0];
+            BoundBox[boxNum].startY = yPos;
             BoundBox[boxNum].startOrEndFlag = 1;
         }
         else{
             //Bottom right aka end
-            BoundBox[boxNum].endX = xPos-50;
-            BoundBox[boxNum].endY = yPos-50;
+            BoundBox[boxNum].endX = xPos-clickOffsets[0];
+            BoundBox[boxNum].endY = yPos;
             BoundBox[boxNum].startOrEndFlag = 0;
         }
     }
     else{
         if (BoundBox[boxNum].startOrEndFlag == 0){
             //Top Left of box aka start
-            BoundBox[boxNum].startX = xPos-558;
-            BoundBox[boxNum].startY = yPos-50;
+            BoundBox[boxNum].startX = xPos-clickOffsets[1];
+            BoundBox[boxNum].startY = yPos;
             BoundBox[boxNum].startOrEndFlag = 1;
         }
         else{
             //Bottom right aka end
-            BoundBox[boxNum].endX = xPos-558;
-            BoundBox[boxNum].endY = yPos-50;
+            BoundBox[boxNum].endX = xPos-clickOffsets[1];
+            BoundBox[boxNum].endY = yPos;
             BoundBox[boxNum].startOrEndFlag = 0;
         }
     }
@@ -379,7 +414,7 @@ void MainWindow::checkElapsedTime(){
 void MainWindow::updateFrame(){
 
     //Print time and calculate seconds for writing data to file later
-    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
+//    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
     float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
 
     uvc_frame_t *frame;
@@ -436,7 +471,7 @@ void MainWindow::updateFrame(){
             printf("Error, somehow you got to a frame format that doesn't exist.\nBravo tbh\n");
         }
 
-        Mat grayIMG, binaryIMG, greyPlusColor, binaryOneMask, temp; //Create new Mats to to image processing steps
+        Mat grayIMG, binaryIMG, greyPlusColor, binaryOneMask, temp, binaryROI; //Create new Mats to to image processing steps
 
         if (i == 0){
             //flip the image prior to processing
@@ -460,14 +495,17 @@ void MainWindow::updateFrame(){
         cvtColor(temp, greyPlusColor, COLOR_GRAY2RGB);
         temp.release();
 
-        PositionData pd;
+
+        Rect roi(Point(BoundBox[i].startX, BoundBox[i].startY), Point(BoundBox[i].endX, BoundBox[i].endY));
+        binaryROI = binaryIMG(roi);
         vector<Vec3f> circles;
-        HoughCircles(binaryIMG, circles, HOUGH_GRADIENT, 1, 1000, CED, Cent_D, FrameProc[i].max_radius-1, FrameProc[i].max_radius+1);
+        HoughCircles(binaryROI, circles, HOUGH_GRADIENT, 1, 1000, CED, Cent_D, FrameProc[i].max_radius-1, FrameProc[i].max_radius+1);
         Vec3i c;
         for( size_t i = 0; i < circles.size(); i++ ){
             c = circles[i];
         }
 
+        PositionData pd;
         pd.X_Pos = c[0];
         pd.Y_Pos = c[1];
         pd.Radius = c[2];
@@ -482,10 +520,6 @@ void MainWindow::updateFrame(){
             }
         }
 
-        //Draw Circles on Black and White
-        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), 1, col,2,LINE_8);
-        circle(greyPlusColor, Point(pd.X_Pos, pd.Y_Pos), pd.Radius, col,2,LINE_8);
-
         Mat finalImage;
         //Display Image
         //Check for which eye and if grey or Black and White (binary)
@@ -496,7 +530,7 @@ void MainWindow::updateFrame(){
             }
             else{
                 //Right Eye BW frame
-                greyPlusColor.copyTo(finalImage);
+                finalImage = composeFinalImage(greyPlusColor, c, i);
             }
             ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) finalImage.data, finalImage.cols, finalImage.rows, finalImage.step, QImage::Format_RGB888)));
         }
@@ -507,7 +541,7 @@ void MainWindow::updateFrame(){
             }
             else{
                 //Left Eye BW frame
-                greyPlusColor.copyTo(finalImage);
+                finalImage = composeFinalImage(greyPlusColor, c, i);
             }
             ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) finalImage.data, finalImage.cols, finalImage.rows, finalImage.step, QImage::Format_RGB888)));
         }
@@ -517,6 +551,33 @@ void MainWindow::updateFrame(){
         grayIMG.release();
         binaryIMG.release();
         greyPlusColor.release();
+    }
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event){
+//    qDebug() << "Pressed";
+    QPoint point = event->pos();
+    if (point.y() >= 0 && point.y() <= 192){
+        if(point.x() >= 608 && point.x() <= 800){
+            qDebug() << "\nLeft Eye Current Values: ";
+            cout << BoundBox[1].startX << "," << BoundBox[1].startY << " : " << BoundBox[1].endX << "," << BoundBox[1].endY << endl;
+            updateBoundingBox(1, point.x(), point.y());
+            qDebug() << "Left Eye New Values: ";
+            cout << BoundBox[1].startX << "," << BoundBox[1].startY << " : " << BoundBox[1].endX << "," << BoundBox[1].endY << endl;
+        }
+        else if(point.x() >= 0 && point.x() <= 192){
+            qDebug() << "\nRight Eye Current Values: ";
+            cout << BoundBox[0].startX << "," << BoundBox[0].startY << " : " << BoundBox[0].endX << "," << BoundBox[0].endY << endl;
+            updateBoundingBox(0, point.x(), point.y());
+            qDebug() << "Right Eye New Values: ";
+            cout << BoundBox[0].startX << "," << BoundBox[0].startY << " : " << BoundBox[0].endX << "," << BoundBox[0].endY << endl;
+        }
+        else{
+            qDebug() << "Inside Neither Display";
+        }
+    }
+    else{
+        qDebug() << "Inside Neither Display";
     }
 }
 

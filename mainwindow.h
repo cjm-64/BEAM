@@ -5,6 +5,8 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QDebug>
+#include <QMouseEvent>
+#include <QPoint>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -17,6 +19,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+protected:
+    void mousePressEvent(QMouseEvent *event);
 
 private:
     Ui::MainWindow *ui;
