@@ -266,9 +266,7 @@ void MainWindow::initBoundingBox(){
     }
 }
 
-Mat composeFinalImage(Mat greyPlusBinary, Vec3i c, int eye){
-
-    rectangle(greyPlusBinary, Point(BoundBox[eye].startX, BoundBox[eye].startY), Point(BoundBox[eye].endX, BoundBox[eye].endY), boxColour, boxThickness);
+tuple<int, int> getShifts(int eye){
     int xShift = 0;
     int yShift = 0;
     if(BoundBox[eye].startX < BoundBox[eye].endX){
@@ -285,6 +283,16 @@ Mat composeFinalImage(Mat greyPlusBinary, Vec3i c, int eye){
     else{
         yShift = BoundBox[eye].endY;
     }
+    return make_tuple(xShift, yShift);
+}
+
+
+Mat composeFinalImage(Mat greyPlusBinary, Vec3i c, int eye){
+
+    rectangle(greyPlusBinary, Point(BoundBox[eye].startX, BoundBox[eye].startY), Point(BoundBox[eye].endX, BoundBox[eye].endY), boxColour, boxThickness);
+
+    int xShift, yShift;
+    tie (xShift, yShift) = getShifts(eye);
 
     //Draw Circles on Black and White
     circle(greyPlusBinary, Point(c[0]+xShift, c[1]+yShift), 1, circleColour,2,LINE_8);
@@ -361,8 +369,20 @@ void updateBoundingBox(int boxNum, int xPos, int yPos){
     }
 }
 
+
 //Functions to collect and write data to file
-void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
+string writeToFile(ofstream &file, PositionData &pd, int eye, float current_time, string data){
+
+    if(pd.X_Pos==0 && pd.Y_Pos==0){
+        pd.X_Pos = -999;
+        pd.Y_Pos = -999;
+    }
+    else{
+        int xShift, yShift;
+        tie (xShift, yShift) = getShifts(eye);
+        pd.X_Pos = pd.X_Pos + xShift;
+        pd.Y_Pos = pd.Y_Pos + yShift;
+    }
 
     if (eye == 0 && headerwritten == 0){
         if(step == 3){
@@ -371,15 +391,17 @@ void writeToFile(ofstream &file, PositionData &pd, int eye, float current_time){
         else{
             file << headers[step-1][0] << "_" << calibration_number << "_pd" << ",";
         }
-        file << pd.X_Pos << "," << pd.Y_Pos << ",";
+        data = to_string(pd.X_Pos) + "," + to_string(pd.Y_Pos) + "," + to_string(pd.Radius) + ",";
         headerwritten = 1;
     }
     else if (eye == 0 && headerwritten == 1){
-        file << " ," << pd.X_Pos << "," << pd.Y_Pos << ",";
+        data = " ," + to_string(pd.X_Pos) + "," + to_string(pd.Y_Pos) + "," + to_string(pd.Radius) + ",";
     }
     else{
-        file << pd.X_Pos << "," << pd.Y_Pos << "," << current_time << endl;
+        data = data + to_string(pd.X_Pos) + "," + to_string(pd.Y_Pos) + "," + to_string(pd.Radius) +"," + to_string(current_time);
+        file << data << endl;
     }
+    return data;
 
 }
 
@@ -414,11 +436,12 @@ void MainWindow::checkElapsedTime(){
 void MainWindow::updateFrame(){
 
     //Print time and calculate seconds for writing data to file later
-//    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
+    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
     float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
 
     uvc_frame_t *frame;
     uvc_error_t res;
+    string dataLine;
 
     for (int i = 0; i<2;i++){
         //As a side note, the images are greyscaled, however they are treated as color when they are fetched
@@ -506,17 +529,26 @@ void MainWindow::updateFrame(){
         }
 
         PositionData pd;
-        pd.X_Pos = c[0];
-        pd.Y_Pos = c[1];
-        pd.Radius = c[2];
+        if(c[0] == 0 && c[1] == 0){
+            pd.X_Pos = -999;
+            pd.Y_Pos = -999;
+            pd.Radius = 0;
+        }
+        else{
+            pd.X_Pos = c[0];
+            pd.Y_Pos = c[1];
+            pd.Radius = c[2];
+        }
+
+
         if(step != 0){
             if (Output_file.is_open()){
-                writeToFile(Output_file, pd, i, current_time);
+                dataLine = writeToFile(Output_file, pd, i, current_time, dataLine);
             }
             else{
                 Output_file.open(QCoreApplication::arguments()[1].toStdString().append(".csv"));
-                Output_file << "Header,Right_Eye_X,Right_Eye_Y,Left_Eye_X,Left_Eye_Y,Time_s" << endl;
-                writeToFile(Output_file, pd, i, current_time);
+                Output_file << "Header,Right_Eye_X,Right_Eye_Y,Right_Eye_Radius,Left_Eye_X,Left_Eye_Y,Left_Eye_Radius,Time_s" << endl;
+                dataLine = writeToFile(Output_file, pd, i, current_time, dataLine);
             }
         }
 
@@ -547,10 +579,12 @@ void MainWindow::updateFrame(){
         }
 
         //Free memory
+
         image.release();
         grayIMG.release();
         binaryIMG.release();
         greyPlusColor.release();
+        finalImage.release();
     }
 }
 
@@ -559,18 +593,18 @@ void MainWindow::mousePressEvent(QMouseEvent *event){
     QPoint point = event->pos();
     if (point.y() >= 0 && point.y() <= 192){
         if(point.x() >= 608 && point.x() <= 800){
-            qDebug() << "\nLeft Eye Current Values: ";
-            cout << BoundBox[1].startX << "," << BoundBox[1].startY << " : " << BoundBox[1].endX << "," << BoundBox[1].endY << endl;
+//            qDebug() << "\nLeft Eye Current Values: ";
+//            cout << BoundBox[1].startX << "," << BoundBox[1].startY << " : " << BoundBox[1].endX << "," << BoundBox[1].endY << endl;
             updateBoundingBox(1, point.x(), point.y());
-            qDebug() << "Left Eye New Values: ";
-            cout << BoundBox[1].startX << "," << BoundBox[1].startY << " : " << BoundBox[1].endX << "," << BoundBox[1].endY << endl;
+//            qDebug() << "Left Eye New Values: ";
+//            cout << BoundBox[1].startX << "," << BoundBox[1].startY << " : " << BoundBox[1].endX << "," << BoundBox[1].endY << endl;
         }
         else if(point.x() >= 0 && point.x() <= 192){
-            qDebug() << "\nRight Eye Current Values: ";
-            cout << BoundBox[0].startX << "," << BoundBox[0].startY << " : " << BoundBox[0].endX << "," << BoundBox[0].endY << endl;
+//            qDebug() << "\nRight Eye Current Values: ";
+//            cout << BoundBox[0].startX << "," << BoundBox[0].startY << " : " << BoundBox[0].endX << "," << BoundBox[0].endY << endl;
             updateBoundingBox(0, point.x(), point.y());
-            qDebug() << "Right Eye New Values: ";
-            cout << BoundBox[0].startX << "," << BoundBox[0].startY << " : " << BoundBox[0].endX << "," << BoundBox[0].endY << endl;
+//            qDebug() << "Right Eye New Values: ";
+//            cout << BoundBox[0].startX << "," << BoundBox[0].startY << " : " << BoundBox[0].endX << "," << BoundBox[0].endY << endl;
         }
         else{
             qDebug() << "Inside Neither Display";
