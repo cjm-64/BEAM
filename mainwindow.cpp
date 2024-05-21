@@ -55,9 +55,10 @@ struct FrameProcessingInfo{
 };
 
 struct PositionData{
-    int X_Pos;
-    int Y_Pos;
-    int Radius;
+    int xPos;
+    int yPos;
+    int radius;
+    int found;
 };
 
 struct BoundingBox{
@@ -373,16 +374,13 @@ void updateBoundingBox(int boxNum, int xPos, int yPos){
 //Functions to collect and write data to file
 string writeToFile(ofstream &file, PositionData &pd, int eye, float current_time, string data){
 
-    if(pd.X_Pos==0 && pd.Y_Pos==0){
-        pd.X_Pos = -999;
-        pd.Y_Pos = -999;
+    if((pd.xPos==0 && pd.yPos==0) || pd.radius == 0){
+        pd.found = 0;
     }
-    else{
-        int xShift, yShift;
-        tie (xShift, yShift) = getShifts(eye);
-        pd.X_Pos = pd.X_Pos + xShift;
-        pd.Y_Pos = pd.Y_Pos + yShift;
-    }
+    int xShift, yShift;
+    tie (xShift, yShift) = getShifts(eye);
+    pd.xPos = pd.xPos + xShift;
+    pd.yPos = pd.yPos + yShift;
 
     if (eye == 0 && headerwritten == 0){
         if(step == 3){
@@ -391,14 +389,14 @@ string writeToFile(ofstream &file, PositionData &pd, int eye, float current_time
         else{
             file << headers[step-1][0] << "_" << calibration_number << "_pd" << ",";
         }
-        data = to_string(pd.X_Pos) + "," + to_string(pd.Y_Pos) + "," + to_string(pd.Radius) + ",";
+        data =to_string(pd.xPos) + "," + to_string(pd.yPos) + "," + to_string(pd.radius) + "," + to_string(pd.found) + ",";
         headerwritten = 1;
     }
     else if (eye == 0 && headerwritten == 1){
-        data = " ," + to_string(pd.X_Pos) + "," + to_string(pd.Y_Pos) + "," + to_string(pd.Radius) + ",";
+        data = " ," + to_string(pd.xPos) + "," + to_string(pd.yPos) + "," + to_string(pd.radius) + "," + to_string(pd.found) + ",";
     }
     else{
-        data = data + to_string(pd.X_Pos) + "," + to_string(pd.Y_Pos) + "," + to_string(pd.Radius) +"," + to_string(current_time);
+        data = data + to_string(pd.xPos) + "," + to_string(pd.yPos) + "," + to_string(pd.radius) + "," + to_string(pd.found) + "," + to_string(current_time);
         file << data << endl;
     }
     return data;
@@ -529,16 +527,10 @@ void MainWindow::updateFrame(){
         }
 
         PositionData pd;
-        if(c[0] == 0 && c[1] == 0){
-            pd.X_Pos = -999;
-            pd.Y_Pos = -999;
-            pd.Radius = 0;
-        }
-        else{
-            pd.X_Pos = c[0];
-            pd.Y_Pos = c[1];
-            pd.Radius = c[2];
-        }
+        pd.xPos = c[0];
+        pd.yPos = c[1];
+        pd.radius = c[2];
+        pd.found = 1;
 
 
         if(step != 0){
@@ -547,7 +539,7 @@ void MainWindow::updateFrame(){
             }
             else{
                 Output_file.open(QCoreApplication::arguments()[1].toStdString().append(".csv"));
-                Output_file << "Header,Right_Eye_X,Right_Eye_Y,Right_Eye_Radius,Left_Eye_X,Left_Eye_Y,Left_Eye_Radius,Time_s" << endl;
+                Output_file << "Header,Right_Eye_X,Right_Eye_Y,Right_Eye_Radius,Right_Eye_Found,Left_Eye_X,Left_Eye_Y,Left_Eye_Radius,Left_Eye_Found,Time_s" << endl;
                 dataLine = writeToFile(Output_file, pd, i, current_time, dataLine);
             }
         }
