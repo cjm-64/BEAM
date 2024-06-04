@@ -17,10 +17,10 @@
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>0</x>
       <y>0</y>
-      <width>741</width>
-      <height>401</height>
+      <width>800</width>
+      <height>400</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="Displays_and_Controls">
@@ -363,8 +363,8 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>781</width>
-      <height>361</height>
+      <width>780</width>
+      <height>360</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="HomeScreen">
@@ -492,8 +492,8 @@
      <rect>
       <x>250</x>
       <y>70</y>
-      <width>302</width>
-      <height>252</height>
+      <width>300</width>
+      <height>250</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="CalibrationSelection">
