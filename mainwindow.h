@@ -29,14 +29,12 @@ private:
 
 private slots:
     //Cam/Stream setup
-    void initFrameProc();
-    void initCams();
+    void initSystem();
 
     //Getting frame functions
     void startCamera();
     void checkElapsedTime();
     void updateFrame();
-    void initBoundingBox();
 
     //Reset Functions
     void returntoHomeScreen();

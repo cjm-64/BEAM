@@ -23,6 +23,7 @@ SOURCES += \
     settime.cpp
 
 HEADERS += \
+    BEAM_Functions.h \
     globals.h \
     mainwindow.h \
     settime.h
