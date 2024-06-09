@@ -268,22 +268,26 @@ public:
     }
 
     Mat processFrame(Mat image, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
-        Mat greyIMG;
-        cvtColor(image, greyIMG, COLOR_BGR2GRAY);
+        // Mat greyIMG;
+        // cvtColor(image, greyIMG, COLOR_BGR2GRAY);
+
+        // Mat binaryIMG;
+        // threshold(greyIMG, binaryIMG, frameProcInfo.thresh_val, 255, 1);
 
         Mat binaryIMG;
-        threshold(greyIMG, binaryIMG, frameProcInfo.thresh_val, 255, 1);
+        threshold(cvtColor(image, greyIMG, COLOR_BGR2GRAY), binaryIMG, frameProcInfo.thresh_val, 255, 1);
+        Vec3i c = findCircle(binaryIMG, frameProcInfo, boundBox, currentTime);
 
         Mat binaryOneMask;
         inRange(binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), binaryOneMask);
+        binaryIMG.release();
         greyIMG.setTo(Scalar(255, 255, 255), binaryOneMask);
+        binaryOneMask.release();
 
         Mat greyPlusColor;
         cvtColor(greyIMG, greyPlusColor, COLOR_GRAY2RGB);
         greyIMG.release();
-        binaryOneMask.release();
-
-        Vec3i c = findCircle(binaryIMG, frameProcInfo, boundBox, currentTime);
+            
         Mat finalImage = composeFinalImage(greyPlusColor, c, boundBox);
         return finalImage;
 
