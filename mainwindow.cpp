@@ -108,7 +108,7 @@ void MainWindow::startCamera(){
         connect(timer, SIGNAL(timeout()), this, SLOT(checkElapsedTime()));
         qDebug() << "Slot Connected";
     }
-    timer->start(10);
+    timer->start(7);
     qDebug() << "Timer Started";
 }
 
@@ -128,22 +128,17 @@ void MainWindow::updateFrame(){
     qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
     float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
 
-    Mat rightEyeImage, leftEyeImage;
     if (ColorOrBW == 0){
-        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh),rightEyeImage, -1);
-        leftEyeImage = frameProc.getFrame(leftEyeCam.streamInfo.strmh);
+        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh, frameProc.FG), rightEyeCam.imageProc.finalImage, -1);
+        leftEyeCam.imageProc.finalImage = frameProc.getFrame(leftEyeCam.streamInfo.strmh, frameProc.FG);
     }
     else{
-        Mat temp;
-        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh),temp, -1);
-        rightEyeImage = frameProc.processFrame(temp, rightEyeCam.frameProcInfo, rightEyeCam.boundBox, current_time);
-        temp.release();
-        leftEyeImage = frameProc.processFrame(frameProc.getFrame(leftEyeCam.streamInfo.strmh), leftEyeCam.frameProcInfo, leftEyeCam.boundBox, current_time);
+        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh, frameProc.FG), rightEyeCam.imageProc.image, -1);
+        rightEyeCam.imageProc.finalImage = frameProc.processFrame(rightEyeCam.imageProc.image, rightEyeCam.imageProc, rightEyeCam.frameProcInfo, rightEyeCam.boundBox, current_time);
+        leftEyeCam.imageProc.finalImage = frameProc.processFrame(frameProc.getFrame(leftEyeCam.streamInfo.strmh, frameProc.FG), leftEyeCam.imageProc, leftEyeCam.frameProcInfo, leftEyeCam.boundBox, current_time);
     }
-    ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) rightEyeImage.data, rightEyeImage.cols, rightEyeImage.rows, rightEyeImage.step, QImage::Format_RGB888)));
-    ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) leftEyeImage.data, leftEyeImage.cols, leftEyeImage.rows, leftEyeImage.step, QImage::Format_RGB888)));
-    rightEyeImage.release();
-    leftEyeImage.release();
+    ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) rightEyeCam.imageProc.finalImage.data, rightEyeCam.imageProc.finalImage.cols, rightEyeCam.imageProc.finalImage.rows, rightEyeCam.imageProc.finalImage.step, QImage::Format_RGB888)));
+    ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) leftEyeCam.imageProc.finalImage.data, leftEyeCam.imageProc.finalImage.cols, leftEyeCam.imageProc.finalImage.rows, leftEyeCam.imageProc.finalImage.step, QImage::Format_RGB888)));
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event){

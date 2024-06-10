@@ -34,6 +34,15 @@ struct FrameProcessingInformation{
     int Cent_D; //For Circle tracking, read OCV documentation
 };
 
+struct ImageProcessing{
+    Mat image;
+    Mat greyIMG;
+    Mat binaryIMG;
+    Mat binaryOneMask;
+    Mat greyPlusColor;
+    Mat finalImage;
+};
+
 vector<string> getCameraNames(){
     uvc_context_t *ctx;
     uvc_device_t **device_list;
@@ -121,6 +130,7 @@ public:
 
     BoundingBox boundBox;
     FrameProcessingInformation frameProcInfo;
+    ImageProcessing imageProc;
 
     void init(string name, int i){
         initFrameProc();
@@ -242,6 +252,14 @@ public:
         string testTime;
     } FWI;
 
+    struct FrameGetting{
+        Mat frame2image;
+        Mat dummy;
+        int frameW;
+        int frameH;
+        long unsigned int frameBytes;
+    } FG;
+
     //Decompression
     tjhandle decompressor = tjInitDecompress();
 
@@ -249,7 +267,7 @@ public:
     Scalar boxColour = Scalar(119, 3, 252);
     Scalar circleColour = Scalar(255, 0, 0); //Color for drawing on frame
 
-    Mat getFrame(uvc_stream_handle_t *streamHandle){
+    Mat getFrame(uvc_stream_handle_t *streamHandle, FrameGetting FG){
 
         uvc_frame_t *frame;
         uvc_error_t res;
@@ -261,79 +279,66 @@ public:
 //                printf("got frame\n");
         }
 
-        Mat image = frame2Mat(frame);
+        Mat image = frame2Mat(frame, FG);
 
         return image;
 
     }
 
-    Mat processFrame(Mat image, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
-        // Mat greyIMG;
-        // cvtColor(image, greyIMG, COLOR_BGR2GRAY);
+    Mat processFrame(Mat image, ImageProcessing imageProc, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
 
-        // Mat binaryIMG;
-        // threshold(greyIMG, binaryIMG, frameProcInfo.thresh_val, 255, 1);
+        cvtColor(image, imageProc.greyIMG, COLOR_BGR2GRAY);
+        threshold(imageProc.greyIMG, imageProc.binaryIMG, frameProcInfo.thresh_val, 255, 1);
+        Vec3i c = findCircle(imageProc.binaryIMG, frameProcInfo, boundBox, currentTime);
 
-        Mat binaryIMG;
-        threshold(cvtColor(image, greyIMG, COLOR_BGR2GRAY), binaryIMG, frameProcInfo.thresh_val, 255, 1);
-        Vec3i c = findCircle(binaryIMG, frameProcInfo, boundBox, currentTime);
 
-        Mat binaryOneMask;
-        inRange(binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), binaryOneMask);
-        binaryIMG.release();
-        greyIMG.setTo(Scalar(255, 255, 255), binaryOneMask);
-        binaryOneMask.release();
+        inRange(imageProc.binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), imageProc.binaryOneMask);
+        imageProc.greyIMG.setTo(Scalar(255, 255, 255), imageProc.binaryOneMask);
 
-        Mat greyPlusColor;
-        cvtColor(greyIMG, greyPlusColor, COLOR_GRAY2RGB);
-        greyIMG.release();
+        cvtColor(imageProc.greyIMG, imageProc.greyPlusColor, COLOR_GRAY2RGB);
+
             
-        Mat finalImage = composeFinalImage(greyPlusColor, c, boundBox);
-        return finalImage;
+        imageProc.finalImage = composeFinalImage(imageProc.greyPlusColor, c, boundBox);
+        return imageProc.finalImage;
 
     }
 
 
 
 private:
-    Mat frame2Mat(uvc_frame_t *frame){
+    Mat frame2Mat(uvc_frame_t *frame, FrameGetting FG){
         //Allocate buffers for conversions
-        Mat image;
-        int frameW = frame->width;
-        int frameH = frame->height;
-        long unsigned int frameBytes = frame->data_bytes;
+        FG.frameW = frame->width;
+        FG.frameH = frame->height;
+        FG.frameBytes = frame->data_bytes;
 
         if (frame->frame_format == 7){
 //                printf("Frame Format: MJPEG\n");
-            long unsigned int _jpegSize = frameBytes;
-            unsigned char buffer[frameW*frameH*3];
-            tjDecompress2(decompressor, (unsigned char *)frame->data, _jpegSize, buffer, frameW, 0, frameH, TJPF_RGB, TJFLAG_FASTDCT);
-            Mat placeholder(frameH, frameW, CV_8UC3, buffer);
-            placeholder.copyTo(image);
-            placeholder.release();
+//            long unsigned int _jpegSize = frameBytes;
+            unsigned char buffer[FG.frameW*FG.frameH*3];
+            tjDecompress2(decompressor, (unsigned char *)frame->data, FG.frameBytes, buffer, FG.frameW, 0, FG.frameH, TJPF_RGB, TJFLAG_FASTDCT);
+            FG.frame2image = Mat(FG.frameH, FG.frameW, CV_8UC3, buffer);
         }
         else if (frame->frame_format == 3){
 //            printf("Frame Format: Other\n");
             uvc_frame_t *rgb;
-            rgb = uvc_allocate_frame(frameW * frameH * 3);
+            rgb = uvc_allocate_frame(FG.frameW * FG.frameH * 3);
             if (!rgb) {
                 printf("unable to allocate bgr frame!\n");
-                return image;
+                return FG.frame2image;
             }
             uvc_error_t res = uvc_yuyv2rgb(frame, rgb);
             if (res < 0){
                 printf("Unable to copy frame to bgr!\n");
             }
-            Mat placeholder(rgb->height, rgb->width, CV_8UC3, rgb->data);
-            placeholder.copyTo(image);
-            placeholder.release();
+            FG.frame2image = Mat(rgb->height, rgb->width, CV_8UC3, rgb->data);
             uvc_free_frame(rgb);
         }
         else {
             printf("Error, somehow you got to a frame format that doesn't exist.\nBravo tbh\n");
         }
 
-        return image;
+        return FG.frame2image;
     }
 
     Vec3i findCircle(Mat binaryImage, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
