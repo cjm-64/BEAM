@@ -2,6 +2,7 @@
 #include "ui_settime.h"
 #include "globals.h"
 
+
 Settime::Settime(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Settime)

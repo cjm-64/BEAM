@@ -43,10 +43,10 @@ void MainWindow::alignCameras(){
 
 void MainWindow::initSystem(){
     printf("\n\n\n");
-    vector<string> camNames(3);
-    camNames = getCameraNames();
-//    cout << camNames[0] << "\n"  << camNames[1] << "\n"  << camNames[2] << endl;
+    // Get camera names to compare below
+    vector<string> camNames = getCameraNames();
     for (int i=0; i<2; i++){
+        //Init cameras after matching the name
         if (camNames[i] == "Pupil Cam2 ID0"){
             rightEyeCam.init(camNames[i], i);
             rightEyeCam.clickXOffset = 0;
@@ -56,9 +56,10 @@ void MainWindow::initSystem(){
             leftEyeCam.clickXOffset = 608;
         }
         else{
-            //Do nothing
+            //Do nothing, this is the world cam that we don't use
         }
     }
+    // Set the filename for later
     frameProc.FWI.fileName = QCoreApplication::arguments()[1].toStdString().append(".csv");
 }
 
@@ -69,9 +70,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->menubar->hide();
     setMouseTracking(true);
+
+    // Do initial set up
     initSystem();
 
-
+    // Create a timer
     timer = new QTimer(this);
 
     //Turn off buttons before doing anything
@@ -85,8 +88,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->verticalLayoutWidget_2->setVisible(false);
 
     //Disable sliders
-
     disableSliders();
+
+    //Dispaly B&W image to align the cameras before test
     alignCameras();
     ColorOrBW = 0;
 
@@ -105,9 +109,11 @@ void MainWindow::startCamera(){
         elapsed_timer.start();
         qDebug() << "Start etimer";
         qDebug() << "Open Stream";
+        // Check if time has elapsed
         connect(timer, SIGNAL(timeout()), this, SLOT(checkElapsedTime()));
         qDebug() << "Slot Connected";
     }
+    //Set non-elapsing timer to fire every 7 ms
     timer->start(7);
     qDebug() << "Timer Started";
 }
@@ -128,36 +134,42 @@ void MainWindow::updateFrame(){
     qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
     float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
 
+    //Get and display image based on which type is needed
     if (ColorOrBW == 0){
-        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh, frameProc.FG), rightEyeCam.imageProc.finalImage, -1);
-        leftEyeCam.imageProc.finalImage = frameProc.getFrame(leftEyeCam.streamInfo.strmh, frameProc.FG);
+        //Creates B&W image for camera set up at beginning
+        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh, frameProc.FG), rightEyeCam.imageManip.finalImage, -1);
+        leftEyeCam.imageManip.finalImage = frameProc.getFrame(leftEyeCam.streamInfo.strmh, frameProc.FG);
     }
     else{
-        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh, frameProc.FG), rightEyeCam.imageProc.image, -1);
-        rightEyeCam.imageProc.finalImage = frameProc.processFrame(rightEyeCam.imageProc.image, rightEyeCam.imageProc, rightEyeCam.frameProcInfo, rightEyeCam.boundBox, current_time);
-        leftEyeCam.imageProc.finalImage = frameProc.processFrame(frameProc.getFrame(leftEyeCam.streamInfo.strmh, frameProc.FG), leftEyeCam.imageProc, leftEyeCam.frameProcInfo, leftEyeCam.boundBox, current_time);
+        //Creates processed image for everything else
+        flip(frameProc.getFrame(rightEyeCam.streamInfo.strmh, frameProc.FG), rightEyeCam.imageManip.image, -1);
+        rightEyeCam.imageManip.finalImage = frameProc.processFrame(rightEyeCam.imageManip.image, rightEyeCam.imageManip, rightEyeCam.frameProcInfo, rightEyeCam.boundBox, current_time);
+        leftEyeCam.imageManip.finalImage = frameProc.processFrame(frameProc.getFrame(leftEyeCam.streamInfo.strmh, frameProc.FG), leftEyeCam.imageManip, leftEyeCam.frameProcInfo, leftEyeCam.boundBox, current_time);
     }
-    ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) rightEyeCam.imageProc.finalImage.data, rightEyeCam.imageProc.finalImage.cols, rightEyeCam.imageProc.finalImage.rows, rightEyeCam.imageProc.finalImage.step, QImage::Format_RGB888)));
-    ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) leftEyeCam.imageProc.finalImage.data, leftEyeCam.imageProc.finalImage.cols, leftEyeCam.imageProc.finalImage.rows, leftEyeCam.imageProc.finalImage.step, QImage::Format_RGB888)));
+    //Display the image
+    ui->RightEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) rightEyeCam.imageManip.finalImage.data, rightEyeCam.imageManip.finalImage.cols, rightEyeCam.imageManip.finalImage.rows, rightEyeCam.imageManip.finalImage.step, QImage::Format_RGB888)));
+    ui->LeftEyeDisplay->setPixmap(QPixmap::fromImage(QImage((unsigned char*) leftEyeCam.imageManip.finalImage.data, leftEyeCam.imageManip.finalImage.cols, leftEyeCam.imageManip.finalImage.rows, leftEyeCam.imageManip.finalImage.step, QImage::Format_RGB888)));
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event){
 //    qDebug() << "Pressed";
     QPoint point = event->pos();
+    //Check if click is within either frame
+    //Update box if click is within the frame by sending point to function
     if (point.y() >= 0 && point.y() <= 192){
         if(point.x() >= 608 && point.x() <= 800){
-            qDebug() << "\nleft Eye Current Values: ";
-            cout << leftEyeCam.boundBox.startX << "," << leftEyeCam.boundBox.startY << "," << leftEyeCam.boundBox.endX << "," << leftEyeCam.boundBox.endY << endl;
+//            qDebug() << "\nleft Eye Current Values: ";
+//            cout << leftEyeCam.boundBox.startX << "," << leftEyeCam.boundBox.startY << "," << leftEyeCam.boundBox.endX << "," << leftEyeCam.boundBox.endY << endl;
             leftEyeCam.updateBoundingBox(point.x(), point.y());
-            qDebug() << "left Eye New Values: ";
-            cout << leftEyeCam.boundBox.startX << "," << leftEyeCam.boundBox.startY << "," << leftEyeCam.boundBox.endX << "," << leftEyeCam.boundBox.endY << endl;
+//            qDebug() << "left Eye New Values: ";
+//            cout << leftEyeCam.boundBox.startX << "," << leftEyeCam.boundBox.startY << "," << leftEyeCam.boundBox.endX << "," << leftEyeCam.boundBox.endY << endl;
         }
         else if(point.x() >= 0 && point.x() <= 192){
-            qDebug() << "\nRight Eye Current Values: ";
-            cout << rightEyeCam.boundBox.startX << "," << rightEyeCam.boundBox.startY << "," << rightEyeCam.boundBox.endX << "," << rightEyeCam.boundBox.endY << endl;
+//            qDebug() << "\nRight Eye Current Values: ";
+//            cout << rightEyeCam.boundBox.startX << "," << rightEyeCam.boundBox.startY << "," << rightEyeCam.boundBox.endX << "," << rightEyeCam.boundBox.endY << endl;
             rightEyeCam.updateBoundingBox(point.x(), point.y());
-            qDebug() << "Right Eye New Values: ";
-            cout << rightEyeCam.boundBox.startX << "," << rightEyeCam.boundBox.startY << "," << rightEyeCam.boundBox.endX << "," << rightEyeCam.boundBox.endY << endl;
+//            qDebug() << "Right Eye New Values: ";
+//            cout << rightEyeCam.boundBox.startX << "," << rightEyeCam.boundBox.startY << "," << rightEyeCam.boundBox.endX << "," << rightEyeCam.boundBox.endY << endl;
         }
         else{
             qDebug() << "Inside Neither Display";
@@ -183,6 +195,8 @@ void MainWindow::returntoHomeScreen(){
 }
 
 void MainWindow::closeCameras(){
+
+    //Check certain flags to determine next actions
     if(ColorOrBW == 0){
         ColorOrBW = 1;
     }
@@ -201,6 +215,7 @@ void MainWindow::on_CloseDisplay_and_Control_clicked()
 //Home Screen
 void MainWindow::on_Quit_clicked()
 {
+    //Close the context for the cameras to close program correctly
     rightEyeCam.close(rightEyeCam.streamInfo.ctx);
     leftEyeCam.close(leftEyeCam.streamInfo.ctx);
 

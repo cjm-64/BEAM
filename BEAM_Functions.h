@@ -14,19 +14,19 @@
 
 // ID0 = right, ID1 = Left, ID2 = World
 
-
-
 using namespace std;
 using namespace cv;
 
+//Struct to hold bounding box information
 struct BoundingBox{
-    int startX;
-    int startY;
-    int endX;
-    int endY;
-    int startOrEndFlag;
+    int startX; //Top left X pixel value
+    int startY; //Top left Y pixel value
+    int endX; //Bottom right X pixel value
+    int endY; //Bottom right Y pixel value
+    int startOrEndFlag; //Flag to track which corner is being moved
 };
 
+//Struct to hold frame processing information
 struct FrameProcessingInformation{
     int thresh_val; //Threshold value for gray to binary conversion
     int max_radius; //Max radius circle to search for in HoughCircles()
@@ -34,7 +34,8 @@ struct FrameProcessingInformation{
     int Cent_D; //For Circle tracking, read OCV documentation
 };
 
-struct ImageProcessing{
+//Struct to hold bounding box information
+struct ImageManipulation{
     Mat image;
     Mat greyIMG;
     Mat binaryIMG;
@@ -44,6 +45,7 @@ struct ImageProcessing{
 };
 
 vector<string> getCameraNames(){
+    //Intialize variables to get the names of the cameras
     uvc_context_t *ctx;
     uvc_device_t **device_list;
     uvc_device_t *dev;
@@ -61,6 +63,7 @@ vector<string> getCameraNames(){
         uvc_perror(res, "uvc_find_device");
     }
     int i = 0;
+    //Iterate through list of devices and record each camera name
     while (true) {
         dev = device_list[i];
         if (dev == NULL) {
@@ -130,7 +133,7 @@ public:
 
     BoundingBox boundBox;
     FrameProcessingInformation frameProcInfo;
-    ImageProcessing imageProc;
+    ImageManipulation imageManip;
 
     void init(string name, int i){
         initFrameProc();
@@ -146,6 +149,7 @@ public:
 
     //Function to update the bounding box for drawing
     void updateBoundingBox(int xPos, int yPos){
+        //Assuming it is used properly the user will update top left then bottom right
         if (this->boundBox.startOrEndFlag == 0){
             //Top Left of box aka start
             this->boundBox.startX = xPos-clickXOffset;
@@ -158,6 +162,27 @@ public:
             this->boundBox.endY = yPos;
             this->boundBox.startOrEndFlag = 0;
         }
+
+        //However incase the user does it the wrong way, this flips the points that need to be flipped
+        //End X&Y should always be greater than start X&Y
+        if(this->boundBox.startX > this->boundBox.endX){
+            int temp = this->boundBox.startX;
+            this->boundBox.startX = this->boundBox.endX;
+            this->boundBox.endX = temp;
+        }
+        if(this->boundBox.startY > this->boundBox.endY){
+            int temp = this->boundBox.startY;
+            this->boundBox.startY = this->boundBox.endY;
+            this->boundBox.endY = temp;
+        }
+
+        if(this->boundBox.startX == this->boundBox.endX){
+            this->boundBox.endX = this->boundBox.endX + 1;
+        }
+        if(this->boundBox.startY == this->boundBox.endY){
+            this->boundBox.endY = this->boundBox.endY + 1;
+        }
+
     }
 
 private:
@@ -232,7 +257,10 @@ private:
         }
         printf("\n\n\n");
     }
+
 };
+
+
 
 
 
@@ -285,21 +313,21 @@ public:
 
     }
 
-    Mat processFrame(Mat image, ImageProcessing imageProc, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
+    Mat processFrame(Mat image, ImageManipulation imageManip, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
 
-        cvtColor(image, imageProc.greyIMG, COLOR_BGR2GRAY);
-        threshold(imageProc.greyIMG, imageProc.binaryIMG, frameProcInfo.thresh_val, 255, 1);
-        Vec3i c = findCircle(imageProc.binaryIMG, frameProcInfo, boundBox, currentTime);
+        cvtColor(image, imageManip.greyIMG, COLOR_BGR2GRAY);
+        threshold(imageManip.greyIMG, imageManip.binaryIMG, frameProcInfo.thresh_val, 255, 1);
+        Vec3i c = findCircle(imageManip.binaryIMG, frameProcInfo, boundBox, currentTime);
 
 
-        inRange(imageProc.binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), imageProc.binaryOneMask);
-        imageProc.greyIMG.setTo(Scalar(255, 255, 255), imageProc.binaryOneMask);
+        inRange(imageManip.binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), imageManip.binaryOneMask);
+        imageManip.greyIMG.setTo(Scalar(255, 255, 255), imageManip.binaryOneMask);
 
-        cvtColor(imageProc.greyIMG, imageProc.greyPlusColor, COLOR_GRAY2RGB);
+        cvtColor(imageManip.greyIMG, imageManip.greyPlusColor, COLOR_GRAY2RGB);
 
             
-        imageProc.finalImage = composeFinalImage(imageProc.greyPlusColor, c, boundBox);
-        return imageProc.finalImage;
+        imageManip.finalImage = composeFinalImage(imageManip.greyPlusColor, c, boundBox);
+        return imageManip.finalImage;
 
     }
 
@@ -342,8 +370,8 @@ private:
     }
 
     Vec3i findCircle(Mat binaryImage, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
-        Rect roi(Point(boundBox.startX, boundBox.startY), Point(boundBox.endX, boundBox.endY));
-        Mat binaryROI = binaryImage(roi);
+
+        Mat binaryROI = binaryImage(Rect(Point(boundBox.startX, boundBox.startY), Point(boundBox.endX, boundBox.endY)));
         vector<Vec3f> circles;
         HoughCircles(binaryROI, circles, HOUGH_GRADIENT, 1, 1000, frameProcInfo.CED, frameProcInfo.Cent_D, frameProcInfo.max_radius - 1, frameProcInfo.max_radius + 1);
         Vec3i c;
@@ -391,7 +419,6 @@ private:
         else{
             this->FWI.dataOut = this->FWI.dataOut + to_string(circle[0]+xShift) + "," + to_string(circle[1]+yShift) + "," + to_string(circle[2]) + "," + to_string(found) + "," + to_string(currentTime);
             this->FWI.rightOrLeftEye = 0;
-            cout << this->FWI.dataOut;
             outputFile << this->FWI.dataOut << endl;
         }
     }
