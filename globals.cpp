@@ -2,7 +2,7 @@
 
 //Test Timing
 int Test_Time = 0; //Total time in seconds
-int Test_Time_M = 0; //Minutes to run
+int Test_Time_M = 1; //Minutes to run
 int Test_Time_H = 0; //Hours to run
 int SetUpTime = 300000; //5 minutes (300 seconds) to set up tracking
 int CalibrationTime = 3000; //3 seconds in ms

@@ -298,6 +298,8 @@ void MainWindow::on_RunDiagnostic_clicked()
     ST.setModal(true);
     ST.exec();
 
+    cout << "Test time: " << Test_Time << endl;
+
     RecordingTimer = Test_Time;
     frameProc.FWI.testTime = to_string(Test_Time_H) + "_" + to_string(Test_Time_M);
 
