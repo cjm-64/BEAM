@@ -131,8 +131,8 @@ void MainWindow::checkElapsedTime(){
 void MainWindow::updateFrame(){
 
     //Print time and calculate seconds for writing data to file later
-    qDebug() << static_cast<float>(elapsed_timer.elapsed())/60000;
     float current_time = static_cast<float>(elapsed_timer.elapsed())/1000;
+    ui->TimeDisplay->display(static_cast<int>(round(elapsed_timer.elapsed())/60000));
 
     //Get and display image based on which type is needed
     if (ColorOrBW == 0){
@@ -296,6 +296,7 @@ void MainWindow::on_RunDiagnostic_clicked()
 
     Settime ST;
     ST.setModal(true);
+    ST.setWindowState(Qt::WindowFullScreen);
     ST.exec();
 
     cout << "Test time: " << Test_Time << endl;

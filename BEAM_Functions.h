@@ -80,27 +80,6 @@ vector<string> getCameraNames(){
     return camNames;
 };
 
-tuple<int, int> getShifts(BoundingBox boundBox){
-    int xShift = 0;
-    int yShift = 0;
-    if(boundBox.startX < boundBox.endX){
-        xShift = boundBox.startX;
-    }
-    else{
-        xShift = boundBox.endX;
-    }
-
-
-    if(boundBox.startY < boundBox.endY){
-        yShift = boundBox.startY;
-    }
-    else{
-        yShift = boundBox.endY;
-    }
-    return make_tuple(xShift, yShift);
-}
-
-
 
 class Camera {
 public:
@@ -398,8 +377,6 @@ private:
     }
 
     void writeToFile(ofstream &outputFile, Vec3i circle, int found, BoundingBox boundBox, float currentTime){
-        int xShift, yShift;
-        tie (xShift, yShift) = getShifts(boundBox);
 
         if (this->FWI.rightOrLeftEye == 0 && this->FWI.headerWritten == 0){
             if (this->FWI.step == 3){
@@ -408,22 +385,23 @@ private:
             else{
                 this->FWI.dataOut = this->FWI.headers[this->FWI.step-1][0] + "_" + to_string(this->FWI.calibrationNumber) + "_pd" + ",";
             }
-            this->FWI.dataOut = this->FWI.dataOut + to_string(circle[0]+xShift) + "," + to_string(circle[1]+yShift) + "," + to_string(circle[2]) + "," + to_string(found) + ",";
+            this->FWI.dataOut = this->FWI.dataOut + to_string(circle[0]+boundBox.startX) + "," + to_string(circle[1]+boundBox.startY) + "," + to_string(circle[2]) + "," + to_string(found) + ",";
             this->FWI.headerWritten = 1;
             this->FWI.rightOrLeftEye = 1;
         }
         else if(this->FWI.rightOrLeftEye == 0 && this->FWI.headerWritten == 1){
-            this->FWI.dataOut = " ," + to_string(circle[0]+xShift) + "," + to_string(circle[1]+yShift) + "," + to_string(circle[2]) + "," + to_string(found) + ",";
+            this->FWI.dataOut = " ," + to_string(circle[0]+boundBox.startX) + "," + to_string(circle[1]+boundBox.startY) + "," + to_string(circle[2]) + "," + to_string(found) + ",";
             this->FWI.rightOrLeftEye = 1;
         }
         else{
-            this->FWI.dataOut = this->FWI.dataOut + to_string(circle[0]+xShift) + "," + to_string(circle[1]+yShift) + "," + to_string(circle[2]) + "," + to_string(found) + "," + to_string(currentTime);
+            this->FWI.dataOut = this->FWI.dataOut + to_string(circle[0]+boundBox.startX) + "," + to_string(circle[1]+boundBox.startY) + "," + to_string(circle[2]) + "," + to_string(found) + "," + to_string(currentTime);
             this->FWI.rightOrLeftEye = 0;
             outputFile << this->FWI.dataOut << endl;
         }
     }
 
     Mat composeFinalImage(Mat greyPlusColor, Vec3i c, BoundingBox boundBox){
+        //Draw Bounding Box
         rectangle(greyPlusColor, Point(boundBox.startX, boundBox.startY), Point(boundBox.endX, boundBox.endY), boxColour, boxThickness);
 
         //Draw Circles on image
