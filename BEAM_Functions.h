@@ -328,13 +328,16 @@ public:
         //Find the circls in the black and white image
         Vec3i c = findCircle(imageManip.binaryIMG, frameProcInfo, boundBox, currentTime);
 
-
+        //Find locations where black and white image is white (aka binary 1)
         inRange(imageManip.binaryIMG, Scalar(255, 255, 255), Scalar(255, 255, 255), imageManip.binaryOneMask);
+
+        //Set grey image to white where the bianry mask is while
         imageManip.greyIMG.setTo(Scalar(255, 255, 255), imageManip.binaryOneMask);
 
+        //Allow color to be used on the grey image
         cvtColor(imageManip.greyIMG, imageManip.greyPlusColor, COLOR_GRAY2RGB);
 
-            
+        //Add bounding box and circle to the image that gets displayed
         imageManip.finalImage = composeFinalImage(imageManip.greyPlusColor, c, boundBox);
         return imageManip.finalImage;
 
