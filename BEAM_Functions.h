@@ -34,7 +34,7 @@ struct FrameProcessingInformation{
     int Cent_D; //For Circle tracking, read OCV documentation
 };
 
-//Struct to hold bounding box information
+//Struct intermiediate steps for image processing
 struct ImageManipulation{
     Mat image;
     Mat greyIMG;
@@ -54,6 +54,9 @@ vector<string> getCameraNames(){
 
     vector<string> camNames(3);
 
+    //Create a UVC context
+    //Get the list of the devices
+    //Iterate through list of devices and record the names of all the cameras
     res = uvc_init(&ctx,NULL);
     if(res < 0) {
         uvc_perror(res, "uvc_init");
@@ -63,7 +66,6 @@ vector<string> getCameraNames(){
         uvc_perror(res, "uvc_find_device");
     }
     int i = 0;
-    //Iterate through list of devices and record each camera name
     while (true) {
         dev = device_list[i];
         if (dev == NULL) {
@@ -83,6 +85,7 @@ vector<string> getCameraNames(){
 
 class Camera {
 public:
+    //Struct to house information about the camera
     struct CamInformation{
         string camName;
         int camNum;
@@ -95,6 +98,7 @@ public:
         uvc_device_t *dev;
     } camInfo;
 
+    //Struct to house information about stream for the camera
     struct StreamInformation{
         uvc_context_t *ctx;
         uvc_error_t res;
@@ -129,6 +133,7 @@ public:
     //Function to update the bounding box for drawing
     void updateBoundingBox(int xPos, int yPos){
         //Assuming it is used properly the user will update top left then bottom right
+        //Assigned using user click on screen
         if (this->boundBox.startOrEndFlag == 0){
             //Top Left of box aka start
             this->boundBox.startX = xPos-clickXOffset;
@@ -143,7 +148,7 @@ public:
         }
 
         //However incase the user does it the wrong way, this flips the points that need to be flipped
-        //End X&Y should always be greater than start X&Y
+        //End X&Y should always be greater than start X&Y because 0,0 is top left of image
         if(this->boundBox.startX > this->boundBox.endX){
             int temp = this->boundBox.startX;
             this->boundBox.startX = this->boundBox.endX;
@@ -155,6 +160,7 @@ public:
             this->boundBox.endY = temp;
         }
 
+        //Bounding box cannot have start and ends at the same point, so if this occurs, move the end positions by 1 pixel
         if(this->boundBox.startX == this->boundBox.endX){
             this->boundBox.endX = this->boundBox.endX + 1;
         }
@@ -165,6 +171,7 @@ public:
     }
 
 private:
+    //Set initial values
     void initFrameProc(){
         frameProcInfo.thresh_val = 50;
         frameProcInfo.max_radius = 50;
@@ -172,6 +179,7 @@ private:
         frameProcInfo.Cent_D = 1;
     }
 
+    //Set initial values
     void initBoundingBox(){
         boundBox.startX = 10;
         boundBox.startY = 10;
@@ -180,30 +188,40 @@ private:
         boundBox.startOrEndFlag = 0;
     }
 
+    //Initialize the camera
     void initCamera(string name, int i){
+        //Save name and num to Class's caminfo struct
         this->camInfo.camName = name;
         this->camInfo.camNum = i;
 
+        //Open UVC context
         this->streamInfo.res = uvc_init(&this->streamInfo.ctx, NULL);
         if (this->streamInfo.res < 0){
             uvc_perror(this->streamInfo.res, "uvc_find_device");
         }
+
+        //Get device list
         this->streamInfo.res = uvc_find_devices(this->streamInfo.ctx, &streamInfo.deviceList, 0, 0, NULL);
         if (this->streamInfo.res < 0) {
             uvc_perror(this->streamInfo.res, "uvc_init");
         }
+
+        //Open the camera at location in the list
         this->streamInfo.res = uvc_open(this->streamInfo.deviceList[this->camInfo.camNum], &this->streamInfo.devh, 1);
         if (this->streamInfo.res < 0) {
             uvc_perror(this->streamInfo.res, "uvc_find_device"); /* no devices found */
         }
         else{
-            cout << "Name: " << this->camInfo.camName << endl;
+            cout << "Opened " << this->camInfo.camName << endl;
         }
+
+        //Format camera into MJPEG
         this->streamInfo.format_desc = uvc_get_format_descs(this->streamInfo.devh);
         this->streamInfo.format_desc = this->streamInfo.format_desc->next;
         this->streamInfo.frame_desc = this->streamInfo.format_desc->frame_descs->next;
         this->streamInfo.frame_format = UVC_FRAME_FORMAT_MJPEG;
 
+        //Format the frame to 192x192, 120 fps
         if(this->streamInfo.frame_desc){
             this->camInfo.width = this->streamInfo.frame_desc->wWidth;
             this->camInfo.height = this->streamInfo.frame_desc->wHeight;
@@ -212,6 +230,7 @@ private:
         printf("\n%s: \n    format: %4s\n    size: %dx%d\n    frame rate: %d fps\n\n", this->camInfo.camName.c_str(), this->streamInfo.format_desc->fourccFormat, this->camInfo.width, this->camInfo.height, this->camInfo.fps);
 
 
+        //Begin steps of getting the camera stream
         this->streamInfo.res = uvc_get_stream_ctrl_format_size(this->streamInfo.devh, &this->streamInfo.ctrl, this->streamInfo.frame_format, this->camInfo.width, this->camInfo.height, this->camInfo.fps, 1);
         if (this->streamInfo.res < 0){
             uvc_perror(this->streamInfo.res, "uvc_get_stream_ctrl_format_size");
@@ -227,6 +246,8 @@ private:
         else{
             printf("Eye %s stream opened\n", this->camInfo.camName.c_str());
         }
+
+        //Open the stream of the camera
         this->streamInfo.res = uvc_stream_start(this->streamInfo.strmh, nullptr, nullptr,1.6,0);
         if (this->streamInfo.res < 0){
             uvc_perror(this->streamInfo.res, "uvc_stream_start");
@@ -245,6 +266,7 @@ private:
 
 class Frame{
 public:
+    //Struct for information for file writing
     struct fileWritingInformation{
         ofstream outputFile;
         string dataOut;
@@ -259,6 +281,7 @@ public:
         string testTime;
     } FWI;
 
+    //Struct for information for retrieving frame and converting to Mat
     struct FrameGetting{
         Mat frame2image;
         Mat dummy;
@@ -274,6 +297,7 @@ public:
     Scalar boxColour = Scalar(119, 3, 252);
     Scalar circleColour = Scalar(255, 0, 0); //Color for drawing on frame
 
+    //Gets frame from stream and feeds to function that converts to Mat
     Mat getFrame(uvc_stream_handle_t *streamHandle, FrameGetting FG){
 
         uvc_frame_t *frame;
@@ -292,10 +316,16 @@ public:
 
     }
 
+    //Take grey image from stream and process to create final image
     Mat processFrame(Mat image, ImageManipulation imageManip, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
 
+        //Mat is greyscaled but it stored as RGB so it needs to be converted
         cvtColor(image, imageManip.greyIMG, COLOR_BGR2GRAY);
+
+        //Convert greyscale to black and white based on threshold set by slider
         threshold(imageManip.greyIMG, imageManip.binaryIMG, frameProcInfo.thresh_val, 255, 1);
+
+        //Find the circls in the black and white image
         Vec3i c = findCircle(imageManip.binaryIMG, frameProcInfo, boundBox, currentTime);
 
 
@@ -313,21 +343,22 @@ public:
 
 
 private:
+    //Converts from UVC frame to opencv Mat
     Mat frame2Mat(uvc_frame_t *frame, FrameGetting FG){
         //Allocate buffers for conversions
         FG.frameW = frame->width;
         FG.frameH = frame->height;
         FG.frameBytes = frame->data_bytes;
 
+        //Check type, MJPEG = 7, Other = 3
         if (frame->frame_format == 7){
-//                printf("Frame Format: MJPEG\n");
-//            long unsigned int _jpegSize = frameBytes;
+            //Allocate buffer, decrompress frame into buffer, write image to Mat
             unsigned char buffer[FG.frameW*FG.frameH*3];
             tjDecompress2(decompressor, (unsigned char *)frame->data, FG.frameBytes, buffer, FG.frameW, 0, FG.frameH, TJPF_RGB, TJFLAG_FASTDCT);
             FG.frame2image = Mat(FG.frameH, FG.frameW, CV_8UC3, buffer);
         }
         else if (frame->frame_format == 3){
-//            printf("Frame Format: Other\n");
+            //Convert frame from stream to RGB, write RGB frame to Mat
             uvc_frame_t *rgb;
             rgb = uvc_allocate_frame(FG.frameW * FG.frameH * 3);
             if (!rgb) {
@@ -350,26 +381,38 @@ private:
 
     Vec3i findCircle(Mat binaryImage, FrameProcessingInformation frameProcInfo, BoundingBox boundBox, float currentTime) {
 
+        //Create binary image but only the part inside the bounding box
         Mat binaryROI = binaryImage(Rect(Point(boundBox.startX, boundBox.startY), Point(boundBox.endX, boundBox.endY)));
+
+        //Create place to store data about circle
         vector<Vec3f> circles;
+
+        //Find 1 circle inside the image, using the radius value set by user via slider
         HoughCircles(binaryROI, circles, HOUGH_GRADIENT, 1, 1000, frameProcInfo.CED, frameProcInfo.Cent_D, frameProcInfo.max_radius - 1, frameProcInfo.max_radius + 1);
+
+        //Convert from float to int
         Vec3i c;
         for (size_t i = 0; i < circles.size(); i++) {
             c = circles[i];
         }
 
+        //Check if circle is found. If X & Y position of circle == 0 or if radius == 0
         int found = 1;
         if ((c[0] == 0 && c[1] == 0) || c[2] == 0){
             found = 0;
         }
 
+
+        //Write circle position to file
         if(this->FWI.step != 0){
-            if(this->FWI.outputFile.is_open()){
+            //If file is not open, open in, write the top line, then write data
+            //Else just write data
+            if(!this->FWI.outputFile.is_open()){
+                this->FWI.outputFile.open(this->FWI.fileName);
+                this->FWI.outputFile << "Header,Right_Eye_X,Right_Eye_Y,Right_Eye_Radius,Right_Eye_Found,Left_Eye_X,Left_Eye_Y,Left_Eye_Radius,Left_Eye_Found,Time_s" << endl;
                 writeToFile(this->FWI.outputFile, c, found, boundBox, currentTime);
             }
             else{
-                this->FWI.outputFile.open(this->FWI.fileName);
-                this->FWI.outputFile << "Header,Right_Eye_X,Right_Eye_Y,Right_Eye_Radius,Right_Eye_Found,Left_Eye_X,Left_Eye_Y,Left_Eye_Radius,Left_Eye_Found,Time_s" << endl;
                 writeToFile(this->FWI.outputFile, c, found, boundBox, currentTime);
             }
         }
@@ -378,6 +421,11 @@ private:
 
     void writeToFile(ofstream &outputFile, Vec3i circle, int found, BoundingBox boundBox, float currentTime){
 
+        //Check 2 things, which eye and if the section header has been written
+        //Right eye = 0, left = 1
+        //If data is from right eye and section header has not been written, start data write out with header at front
+        //If data is from right eye and section header has been written, start data write with empty space at front
+        //If data is from left eye, append data write out and write to file
         if (this->FWI.rightOrLeftEye == 0 && this->FWI.headerWritten == 0){
             if (this->FWI.step == 3){
                 this->FWI.dataOut = this->FWI.headers[this->FWI.step-1][0] + "_" + this->FWI.testTime + ",";
@@ -401,10 +449,10 @@ private:
     }
 
     Mat composeFinalImage(Mat greyPlusColor, Vec3i c, BoundingBox boundBox){
-        //Draw Bounding Box
+        //Draw Bounding Box using points from struct
         rectangle(greyPlusColor, Point(boundBox.startX, boundBox.startY), Point(boundBox.endX, boundBox.endY), boxColour, boxThickness);
 
-        //Draw Circles on image
+        //Draw Circles on image using outputs from findCircle
         circle(greyPlusColor, Point(c[0]+boundBox.startX, c[1]+boundBox.startY), 1, circleColour,2,LINE_8);
         circle(greyPlusColor, Point(c[0]+boundBox.startX, c[1]+boundBox.startY), c[2], circleColour,2,LINE_8);
         return greyPlusColor;

@@ -45,7 +45,9 @@ void MainWindow::initSystem(){
     printf("\n\n\n");
     // Get camera names to compare below
     vector<string> camNames = getCameraNames();
-    for (int i=0; i<2; i++){
+
+    //Instantiate a class for each camera based on the name of the 2 eye cameras
+    for (int i=0; i<(int)camNames.size(); i++){
         //Init cameras after matching the name
         if (camNames[i] == "Pupil Cam2 ID0"){
             rightEyeCam.init(camNames[i], i);
